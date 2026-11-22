@@ -1,0 +1,90 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.build-tools/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+.tmp/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# xray-core binary + geoip/geosite databases — fetched by scripts/fetch_xray.ps1,
+# not checked into git (see assets/xray/SOURCE.md).
+/assets/xray/*
+!/assets/xray/SOURCE.md
+
+# sing-box binary — fetched by scripts/fetch_sing_box.ps1, not checked into
+# git (see assets/sing-box/SOURCE.md).
+/assets/sing-box/*
+!/assets/sing-box/SOURCE.md
+
+# macOS-варианты обоих — fetched by scripts/fetch_xray_macos.sh /
+# fetch_sing_box_macos.sh, тот же повод.
+/assets/xray-macos/*
+!/assets/xray-macos/SOURCE.md
+/assets/sing-box-macos/*
+!/assets/sing-box-macos/SOURCE.md
+
+# libv2ray.aar (xray-core for Android) — built by scripts/build_android_xray.ps1,
+# not checked into git (see android/app/libs/SOURCE.md).
+/android/app/libs/*
+!/android/app/libs/SOURCE.md
+
+# Clone of 2dust/AndroidLibXrayLite that scripts/build_android_xray.ps1 builds
+# against — not our code, not checked into git.
+/tool/android-xray-lite/src/
+
+# Локальный Flutter SDK для воспроизводимой Windows-сборки. Скачивается
+# разработчиком/CI, в репозиторий не попадает.
+/tool/flutter/
+/tool/flutter_windows_*-stable.zip
+
+# Local credentials are never part of a source release.
+.env
+.env.*
+!.env.example
+*.pfx
+*.p12
+*.pem
+*.key
+*.jks
+*.keystore
+**/key.properties

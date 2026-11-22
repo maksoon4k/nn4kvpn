@@ -1,0 +1,254 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import '../../app/app_paths.dart';
+import '../../core_abstraction/app_settings.dart';
+import '../../core_abstraction/core_config.dart';
+import '../../core_abstraction/core_engine.dart';
+import '../../core_abstraction/proxy_node.dart';
+import '../../core_abstraction/server_config.dart';
+import '../routing_debug_header.dart';
+import 'child_process_job.dart';
+import 'system_proxy_lease.dart';
+import 'windows_system_proxy.dart';
+import 'xray_config_mapper.dart';
+
+/// Windows-реализация [CoreEngine] для xray-core: управляет `xray.exe` как
+/// подпроцессом — см. PLAN.md, "Ядро №1: xray-core" → "Стратегия для
+/// Windows". Всегда поднимает Proxy-конфиг (SOCKS/HTTP на локальных
+/// портах) — раньше умел ещё и TUN-режим напрямую, но актуальный
+/// xray-core на Windows физически не настраивает ни IP, ни маршруты на
+/// созданном `tun`-адаптере (см. docs/fix_tun/), поэтому TUN теперь
+/// собирается отдельно, через sing-box поверх уже поднятого здесь
+/// SOCKS-порта — см. `lib/engines/singbox/tun_bridge_engine.dart`. Этот
+/// класс используется и напрямую (самостоятельный Proxy-режим), и как
+/// внутренний бэкенд [TunBridgeEngine] — конфиг в обоих случаях один и тот
+/// же, поэтому [manageSystemProxy] позволяет второму не трогать реестр
+/// системного прокси (это по-прежнему только забота самостоятельного
+/// Proxy-режима).
+class XrayEngineWindows implements CoreEngine {
+  XrayEngineWindows({
+    required this.id,
+    required this.xrayExecutablePath,
+    this.socksPort = 10808,
+    this.httpPort = 10809,
+    this.logLevel = CoreLogLevel.warn,
+  });
+
+  @override
+  final String id;
+
+  @override
+  CoreType get type => CoreType.xray;
+
+  final String xrayExecutablePath;
+  final int socksPort;
+  final int httpPort;
+  final CoreLogLevel logLevel;
+
+  Process? _process;
+  File? _configFile;
+  SystemProxyLease? _proxyLease;
+  bool _stopping = false;
+  ServerConfig? _activeServer;
+
+  /// Сервер, к которому подключён текущий (или последний) запуск — выбор
+  /// делается тут, внутри [start], из всего дерева [CoreConfig]. Нужен
+  /// [TunBridgeEngine]: sing-box'у для обхода тоннеля надо знать адрес именно
+  /// того сервера, с которым реально говорит xray (см.
+  /// `singbox_config_mapper.dart`), а повторять здешнюю логику выбора листа у
+  /// себя — значит однажды разойтись с ней и молча обходить не тот адрес.
+  ServerConfig? get activeServer => _activeServer;
+
+  List<RoutingRule> _activeRoutingRules = const [];
+  String _activeDefaultOutboundTag = 'proxy';
+
+  /// Правила роутинга активного листа — нужны [TunBridgeEngine], чтобы
+  /// сгенерировать те же правила ещё и в конфиге sing-box (см.
+  /// `singbox_config_mapper.dart`, ROADMAP.md трек 21).
+  List<RoutingRule> get activeRoutingRules => _activeRoutingRules;
+
+  /// Куда уходит непомеченный трафик активного подключения — та же причина,
+  /// что и у [activeRoutingRules]: нужна [TunBridgeEngine] для конфига
+  /// sing-box.
+  String get activeDefaultOutboundTag => _activeDefaultOutboundTag;
+
+  final _statusController = StreamController<EngineStatus>.broadcast();
+  final _statsController = StreamController<EngineStats>.broadcast();
+
+  @override
+  Stream<EngineStatus> get statusStream => _statusController.stream;
+
+  @override
+  Stream<EngineStats> get statsStream => _statsController.stream;
+
+  @override
+  Future<void> start(
+    CoreConfig config, {
+    bool manageSystemProxy = true,
+    String defaultOutboundTag = 'proxy',
+    String routingLabel = 'server-routing',
+  }) async {
+    _stopping = false;
+    _statusController.add(EngineStatus.starting);
+
+    final leaf = _firstLeafWithConfig(config);
+    final server = leaf?.activeVariant?.config;
+    if (leaf == null || server == null) {
+      _statusController.add(EngineStatus.error);
+      throw StateError('CoreConfig has no server to connect to');
+    }
+
+    _activeServer = server;
+    _activeRoutingRules = leaf.routingRules;
+    _activeDefaultOutboundTag = defaultOutboundTag;
+
+    final xrayConfig = buildXrayConfig(
+      server,
+      socksPort: socksPort,
+      httpPort: httpPort,
+      routingRules: leaf.routingRules,
+      defaultOutboundTag: defaultOutboundTag,
+      logLevel: logLevel,
+    );
+
+    final configFile = await File(
+      '${ensureFluxLogDirectory()}/flux_xray_$id.json',
+    ).writeAsString(jsonEncode(xrayConfig));
+    _configFile = configFile;
+
+    final process = await Process.start(
+      xrayExecutablePath,
+      ['run', '-c', configFile.path],
+      environment: {'XRAY_LOCATION_ASSET': ensureFluxGeoDirectory()},
+    );
+    _process = process;
+    try {
+      tieChildProcessLifetimeToApp(process);
+    } catch (_) {
+      process.kill();
+      await process.exitCode;
+      _process = null;
+      rethrow;
+    }
+    unawaited(
+      _pipeLogs(
+        process,
+        routingDebugHeader(
+          routingLabel: routingLabel,
+          defaultOutboundTag: defaultOutboundTag,
+          ruleCount: leaf.routingRules.length,
+        ),
+      ),
+    );
+
+    SystemProxyLease? proxyLease;
+    unawaited(
+      process.exitCode.then((_) {
+        // Процесс мог упасть сам по себе (не через stop()) — прокси всё
+        // равно нужно снять, иначе пользователь тихо теряет интернет.
+        try {
+          disableWindowsSystemProxy(proxyLease);
+        } catch (_) {
+          _statusController.add(EngineStatus.error);
+          return;
+        }
+        // The TUN bridge must tear down its other half when xray exits on its
+        // own; an unexpected exit is not a successful user-requested stop.
+        _statusController.add(
+          _stopping ? EngineStatus.stopped : EngineStatus.error,
+        );
+      }),
+    );
+
+    if (manageSystemProxy) {
+      proxyLease = enableWindowsSystemProxy(httpPort: httpPort);
+      _proxyLease = proxyLease;
+    }
+    _statusController.add(EngineStatus.connected);
+  }
+
+  @override
+  Future<void> stop() async {
+    _stopping = true;
+    _statusController.add(EngineStatus.stopping);
+    disableWindowsSystemProxy(_proxyLease);
+    _proxyLease = null;
+    _process?.kill();
+    await _process?.exitCode;
+    _process = null;
+    final configFile = _configFile;
+    if (configFile != null && await configFile.exists()) {
+      await configFile.delete();
+    }
+    _configFile = null;
+    _statusController.add(EngineStatus.stopped);
+  }
+
+  @override
+  Future<EngineStats> currentStats() async {
+    // Stats API xray-core (gRPC/HTTP) пока не подключён — см. "Открытые
+    // вопросы" в PLAN.md.
+    return const EngineStats(uploadBytes: 0, downloadBytes: 0);
+  }
+
+  /// `xray.exe`'s own stdout/stderr (route/adapter errors, dial errors,
+  /// ...) was going nowhere — the engine only ever looked at the process
+  /// exit code, so a session that "connects" but silently misbehaves left
+  /// no trace to diagnose from. Mirror both streams into a log file next
+  /// to the generated config so a failed session can be inspected
+  /// afterwards.
+  Future<void> _pipeLogs(Process process, String debugHeader) async {
+    final logFile = File('${ensureFluxLogDirectory()}/flux_xray_$id.log');
+    final sink = logFile.openWrite(mode: FileMode.write);
+    sink.write(debugHeader);
+    try {
+      await Future.wait([
+        process.stdout
+            .transform(const SystemEncoding().decoder)
+            .forEach(sink.write),
+        process.stderr
+            .transform(const SystemEncoding().decoder)
+            .forEach(sink.write),
+      ]);
+    } finally {
+      await sink.close();
+    }
+  }
+
+  ServerLeaf? _firstLeafWithConfig(CoreConfig config) {
+    final roots = [
+      ...config.standaloneNodes,
+      ...config.subscriptions.map((s) => s.root),
+    ];
+    for (final root in roots) {
+      final leaf = _firstLeaf(root);
+      if (leaf?.activeVariant?.config != null) return leaf;
+    }
+    return null;
+  }
+
+  ServerLeaf? _firstLeaf(ProxyNode node) {
+    return switch (node) {
+      ServerLeaf leaf => leaf,
+      AutoSelectMarker() => null,
+      ServerGroup group =>
+        group.children
+            .map(_firstLeaf)
+            .firstWhere((leaf) => leaf != null, orElse: () => null),
+    };
+  }
+}
+
+/// Путь к `xray.exe`, полученному через `scripts/fetch_xray.ps1` (см.
+/// assets/xray/SOURCE.md). Раньше строился от `Directory.current.path` —
+/// под `flutter run` это случайно совпадало с корнем проекта, но при
+/// запуске собранного .exe напрямую (двойной клик, elevated-перезапуск
+/// через ShellExecute) рабочая директория не гарантирована и реально
+/// ловилась `ProcessException: system cannot find the file specified`.
+/// Берём каталог самого исполняемого файла — он не зависит от того, как и
+/// откуда процесс был запущен; `windows/CMakeLists.txt` копирует
+/// `assets/xray` рядом с ним при каждой сборке.
+String defaultXrayExecutablePath() =>
+    '${File(Platform.resolvedExecutable).parent.path}/assets/xray/xray.exe';

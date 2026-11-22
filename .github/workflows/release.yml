@@ -1,0 +1,110 @@
+name: Windows Release
+
+on:
+  push:
+    branches: [main, master]
+    paths: [pubspec.yaml]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-version:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      should_release: ${{ steps.version.outputs.should_release }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Check release version
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $pubspec = Get-Content pubspec.yaml -Raw
+          if ($pubspec -notmatch '(?m)^version:\s*([0-9]+\.[0-9]+\.[0-9]+)(?:\+[0-9]+)?\s*$') { throw 'Invalid stable version' }
+          $version = $Matches[1]
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag must match pubspec.yaml' }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          $errorFile = Join-Path $env:RUNNER_TEMP 'nn4k-release-check-error.txt'
+          $existing = gh release view "v$version" --repo $env:GITHUB_REPOSITORY --json isDraft 2>$errorFile
+          if ($LASTEXITCODE -eq 0) {
+            $shouldRelease = ($existing | ConvertFrom-Json).isDraft
+          } elseif ((Get-Content $errorFile -Raw) -match 'release not found|HTTP 404|Not Found') {
+            $shouldRelease = $true
+          } else {
+            throw 'GitHub release check failed; do not treat an access/network error as a missing release'
+          }
+          "should_release=$($shouldRelease.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
+  build-windows:
+    needs: check-version
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: '3.50.1'
+          channel: stable
+          cache: true
+      - name: Resolve dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Analyze application
+        run: flutter analyze --no-pub --no-fatal-infos
+      - name: Unit and widget tests (no live Proxy/TUN tests)
+        run: flutter test --no-pub
+      - name: Offline release publishing guard tests
+        shell: pwsh
+        run: ./scripts/test_publish_windows_release.ps1
+      - name: Install verified Inno Setup compiler
+        id: inno
+        shell: pwsh
+        run: |
+          $compiler = ./scripts/install_inno_setup.ps1 -Directory "$env:RUNNER_TEMP\inno-7.1.1"
+          "compiler=$compiler" >> $env:GITHUB_OUTPUT
+      - name: Build Windows installer and portable archive
+        shell: pwsh
+        env:
+          INNO_COMPILER: ${{ steps.inno.outputs.compiler }}
+        run: ./scripts/build_installer.ps1 -UpdateRepository $env:GITHUB_REPOSITORY -IsccPath $env:INNO_COMPILER
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-${{ needs.check-version.outputs.version }}
+          path: |
+            build/installer/NN4KSetup-*.exe
+            build/installer/NN4K-*-windows-portable.zip
+            build/installer/checksums.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    needs: [check-version, build-windows]
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: nn4k-release-${{ needs.check-version.outputs.version }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: windows-${{ needs.check-version.outputs.version }}
+          path: release-artifacts
+      - name: Publish only a complete, verified Windows release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.check-version.outputs.version }}
+        shell: pwsh
+        run: ./scripts/publish_windows_release.ps1 -Repository $env:GITHUB_REPOSITORY -Version $env:VERSION -ArtifactDirectory release-artifacts -TargetCommit $env:GITHUB_SHA

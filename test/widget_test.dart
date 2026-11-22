@@ -1,0 +1,194 @@
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:flux/core_abstraction/app_settings.dart';
+import 'package:flux/core_abstraction/app_settings_provider.dart';
+import 'package:flux/core_abstraction/core_config.dart';
+import 'package:flux/core_abstraction/core_config_provider.dart';
+import 'package:flux/core_abstraction/proxy_node.dart';
+import 'package:flux/core_abstraction/server_config.dart';
+import 'package:flux/features/servers/server_list_panel.dart';
+import 'package:flux/main.dart';
+import 'package:flux/widgets/globe/starfield.dart';
+
+void main() {
+  // AppTitleBar talks to the native window_manager plugin (isMaximized,
+  // addListener) — there's no native side in widget tests, so without a
+  // mock handler those channel calls hang the test run indefinitely.
+  const windowManagerChannel = MethodChannel('window_manager');
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(windowManagerChannel, (call) async {
+          if (call.method == 'isMaximized') return false;
+          return null;
+        });
+  });
+
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(windowManagerChannel, null);
+  });
+
+  testWidgets('shows the empty state when there are no servers yet', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          // Не зависим от реального profile.json/settings.json на диске.
+          coreConfigProvider.overrideWith(
+            () => _PresetCoreConfigController(const CoreConfig()),
+          ),
+          appSettingsProvider.overrideWith(_PresetAppSettingsController.new),
+        ],
+        child: FluxApp(
+          navigatorKey: GlobalKey<NavigatorState>(),
+          incomingDeepLinks: const Stream.empty(),
+          safeStart: true,
+        ),
+      ),
+    );
+
+    expect(
+      find.text('Пока нет серверов — добавьте подписку или ссылку.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Выберите сервер слева, чтобы подключиться.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('shows an imported server and lets you select it', (
+    WidgetTester tester,
+  ) async {
+    const leaf = ServerLeaf(
+      id: 'leaf-1',
+      name: 'Germany #1',
+      icon: '🇩🇪',
+      variants: [
+        ConnectionVariant(
+          id: 'variant-1',
+          label: 'XHTTP Reality',
+          config: VlessConfig(
+            address: 'de1.example.com',
+            port: 443,
+            uuid: 'uuid-1',
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          coreConfigProvider.overrideWith(
+            () => _PresetCoreConfigController(
+              const CoreConfig(standaloneNodes: [leaf]),
+            ),
+          ),
+          appSettingsProvider.overrideWith(_PresetAppSettingsController.new),
+        ],
+        child: FluxApp(
+          navigatorKey: GlobalKey<NavigatorState>(),
+          incomingDeepLinks: const Stream.empty(),
+          safeStart: true,
+        ),
+      ),
+    );
+
+    expect(find.text('Отключено'), findsOneWidget);
+    // Единственный сервер выбран по умолчанию — виден в списке, в карточке
+    // подключения и в подписи маркера на глобусе (страна определяется по
+    // флагу 🇩🇪 в icon).
+    expect(find.text('Germany #1'), findsNWidgets(3));
+    expect(
+      find.descendant(
+        of: find.byType(ServerListPanel),
+        matching: find.text('XHTTP Reality'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('drags the server panel edge and saves its width', (
+    tester,
+  ) async {
+    final settings = _PresetAppSettingsController();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          coreConfigProvider.overrideWith(
+            () => _PresetCoreConfigController(const CoreConfig()),
+          ),
+          appSettingsProvider.overrideWith(() => settings),
+        ],
+        child: FluxApp(
+          navigatorKey: GlobalKey<NavigatorState>(),
+          incomingDeepLinks: const Stream.empty(),
+          safeStart: true,
+        ),
+      ),
+    );
+
+    final panel = find.byType(ServerListPanel);
+    final handle = find.byKey(const ValueKey('server-panel-resize'));
+    final background = find.byType(Starfield);
+    expect(tester.getSize(panel).width, 260);
+    expect(tester.getRect(panel).right, tester.getRect(background).left);
+    expect(tester.getRect(handle).left, tester.getRect(panel).right - 1);
+
+    await tester.drag(handle, const Offset(100, 0));
+    await tester.pump();
+
+    final width = tester.getSize(panel).width;
+    expect(width, greaterThan(260));
+    expect(settings.savedPanelWidth, width);
+    expect(tester.getRect(panel).right, tester.getRect(background).left);
+    expect(tester.getRect(handle).left, tester.getRect(panel).right - 1);
+
+    await tester.drag(handle, const Offset(500, 0));
+    await tester.pump();
+    expect(tester.getSize(panel).width, 500);
+    expect(tester.takeException(), isNull);
+  });
+}
+
+class _PresetCoreConfigController extends CoreConfigController {
+  final CoreConfig initial;
+  _PresetCoreConfigController(this.initial);
+
+  @override
+  CoreConfig build() => initial;
+}
+
+class _PresetAppSettingsController extends AppSettingsController {
+  double get savedPanelWidth => state.serverPanelWidth;
+
+  @override
+  void update(AppSettings Function(AppSettings settings) transform) {
+    state = transform(state);
+  }
+
+  // Фон задан явно, а не взят по умолчанию: тест считает вхождения имени
+  // сервера, и третье из них — подпись маркера на глобусе, то есть тест
+  // молча зависит от того, какой фон включён. Со сменой умолчания на galaxy
+  // он и упал.
+  //
+  // Язык задан явно (не `system`) — тест ищет русский текст по значению, а
+  // локаль тестового окружения Flutter не обязательно `ru` (см.
+  // `l10n/app_locale.dart`), так что `system` резолвился бы в английский и
+  // ломал сравнение.
+  @override
+  AppSettings build() => const AppSettings(
+    homeBackground: HomeBackground.globe,
+    language: AppLanguage.ru,
+    // Иначе виджет-тесты вместо ConnectionScreen увидели бы OnboardingFlow
+    // (дефолт конструктора — false, см. app_settings.dart) и падали.
+    onboardingCompleted: true,
+  );
+}

@@ -1,0 +1,140 @@
+<div align="center">
+  <img src="docs/media/icon_with_black.png" width="96" alt="Flux logo" />
+
+  # NN4K
+
+  A Windows VLESS / Hysteria2 client, derived from Flux and built with Flutter.
+</div>
+
+<br />
+
+<div align="center">
+  <img src="docs/media/desktop_screen.png" width="560" alt="Flux on Windows" />
+</div>
+
+## What it is
+
+NN4K is a Windows-focused fork of
+[Flux](https://github.com/fllcker/flux-vpn-client), powered by
+[xray-core](https://github.com/XTLS/Xray-core) (and, on Windows TUN mode, a
+[sing-box](https://github.com/SagerNet/sing-box) routing bridge alongside it).
+It reads a "Magic JSON" profile — subscription URLs and/or standalone servers
+— and gets you connected with a couple of clicks, either through a local
+system proxy or a Windows TUN tunnel. Existing Flux data remains in
+`%AppData%\flux` for compatibility; the Windows executable is `nn4k.exe`.
+
+This fork's release workflows build **Windows only**. Inherited Android/macOS
+code is not covered by the Windows release or the current audit.
+
+## Killer features
+
+- **Server groups, not just a flat list.** Subscriptions auto-group into
+  folders (by name, by tag — however the subscription itself organizes
+  them), and you can drag-and-drop servers/groups to reorder or regroup by
+  hand — manual layout survives subscription refreshes instead of getting
+  wiped every time.
+- **Routing rules per server or in bulk.** Send specific domains/IPs direct
+  or block them, either on one server or applied across an entire
+  subscription at once — no need to repeat the same rule 30 times.
+- **"Magic JSON" profiles.** One JSON format covers subscriptions and
+  standalone servers together, so sharing/backing up your whole setup — not
+  just one link — is a single file. See `docs/` for the format.
+- **Auto-pick-best-server.** Ping every server (through the proxy, raw TCP,
+  or ICMP) and let Flux pick the lowest-latency one instead of guessing.
+- **In-app Windows updates.** Check, download and install from this fork's
+  GitHub Releases. Private-release credentials stay in Windows Credential
+  Manager. Automatic installation is opt-in and waits until VPN is idle.
+
+## Other features
+
+- **Protocols**: VLESS (TCP, XHTTP, TLS, Reality) and Hysteria2.
+- **Subscriptions**: import by URL, auto-refresh, auto-grouping.
+- **Connection modes**: system proxy or TUN tunnel on Windows. TUN requires
+  administrator privileges; installing or updating the application does not.
+- **Tray icon, autostart, and window state** on Windows.
+- Dark theme, Russian/English localization.
+- Original first-run setup: background, language, autostart and an interactive
+  server-list guide. It can be repeated from Settings; the updater does not
+  replace the existing UI or reset appearance preferences.
+
+## Platforms
+
+| Platform | Status |
+| --- | --- |
+| Windows x64 | Release target; see [build and validation notes](docs/WINDOWS_BUILD.md) |
+| Android / macOS | Inherited code; not released or validated by this fork |
+| Linux / iOS | Not supported by this fork's build workflows |
+
+The Windows package targets an **AMD64/x64 Windows OS**, not 32-bit Windows or
+ARM64 emulation: the bundled Wintun driver must match the OS architecture.
+
+The core is deliberately built around a platform-agnostic `CoreEngine`
+abstraction (config format, routing, subscriptions — all shared), so the
+remaining platforms are "write the platform-specific engine glue", not "port
+the app" — see `PLAN.md`.
+
+## Download
+
+Use [**Releases in this repository**](https://github.com/maksoon4k/nn4kvpn/releases/latest), not the upstream Flux download page.
+A private repository requires GitHub access, including for release downloads.
+
+- `NN4KSetup-<version>.exe`: per-user installer.
+- `NN4K-<version>-windows-portable.zip`: extract and run `nn4k.exe`.
+- `checksums.txt`: SHA-256 hashes of both files.
+
+No Authenticode signing is configured. Windows may show an unknown-publisher
+or SmartScreen warning. A matching checksum verifies integrity against the
+trusted release metadata; it does not prove that a program is safe.
+
+Release publication is draft-first: CI verifies every uploaded asset's size
+and SHA-256 before publishing. Published versions must not be overwritten.
+See [Windows updates](docs/WINDOWS_UPDATES.md).
+
+## Building from source
+
+Requires Flutter **3.50.1**, Visual Studio with Desktop development with C++,
+and a Windows SDK with x64 tools/libraries. Packaging uses Inno Setup **7.1.1**.
+
+### Windows
+
+```powershell
+./scripts/fetch_xray.ps1       # downloads xray-core into assets/xray/
+./scripts/fetch_sing_box.ps1   # downloads sing-box into assets/sing-box/
+flutter pub get --enforce-lockfile
+flutter analyze --no-pub --no-fatal-infos
+flutter test --no-pub
+flutter build windows --release --no-pub --dart-define=NN4K_UPDATE_REPOSITORY=maksoon4k/nn4kvpn
+```
+
+For a different private fork, replace `maksoon4k/nn4kvpn` with its repository slug. Only that slug
+is compiled in, **never a GitHub token**. Without the define, configure the
+repository in Settings → About → Updates.
+
+After building, package with `./scripts/build_installer.ps1 -SkipBuild
+-IsccPath <path-to-ISCC.exe>`. See [Windows build notes](docs/WINDOWS_BUILD.md)
+for disk placement, SDK discovery, validation and release instructions.
+
+### Security and licensing
+
+Read the [qualified security review](docs/SECURITY_AUDIT.md) before use. It
+describes fixes, evidence and remaining risks; it is **not a backdoor-free or
+complete-security certification**. Do not test live Proxy/TUN modes as part of
+the automated smoke check.
+
+The supplied upstream tree has no top-level license, and GitHub reported no
+recognized upstream license during this review. Redistribution rights must
+be clarified with the upstream author; do not assume MIT or another license.
+Third-party core license files are included in Windows packages, but they do
+not resolve the application's own licensing.
+
+## Tech stack
+
+Flutter (Dart) UI with a hand-rolled shadcn/ui-inspired widget kit
+(`lib/widgets/port_ui/`), Riverpod for state, and native platform code where
+the engines live: `window_manager`/`tray_manager`/Win32 registry on Windows,
+a Kotlin `VpnService` + Go-bound xray-core on Android.
+
+## Roadmap
+
+Development notes, design decisions, and what's next live in
+[ROADMAP.md](ROADMAP.md).

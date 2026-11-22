@@ -1,0 +1,62 @@
+name: Windows Checks
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_windows:
+        description: Build Windows release packages without publishing a release
+        type: boolean
+        default: false
+  pull_request:
+  push:
+    branches: [main, master]
+    paths-ignore: ['docs/**', '**.md']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: '3.50.1'
+          channel: stable
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: flutter analyze --no-pub --no-fatal-infos
+      - run: flutter test --no-pub
+      - name: Offline release publishing guard tests
+        shell: pwsh
+        run: ./scripts/test_publish_windows_release.ps1
+      - name: Install verified Inno Setup compiler
+        if: github.event_name == 'workflow_dispatch' && inputs.build_windows
+        id: inno
+        shell: pwsh
+        run: |
+          $compiler = ./scripts/install_inno_setup.ps1 -Directory "$env:RUNNER_TEMP\inno-7.1.1"
+          "compiler=$compiler" >> $env:GITHUB_OUTPUT
+      - name: Build Windows installer and portable archive (no publication)
+        if: github.event_name == 'workflow_dispatch' && inputs.build_windows
+        shell: pwsh
+        env:
+          INNO_COMPILER: ${{ steps.inno.outputs.compiler }}
+        run: ./scripts/build_installer.ps1 -UpdateRepository $env:GITHUB_REPOSITORY -IsccPath $env:INNO_COMPILER
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: github.event_name == 'workflow_dispatch' && inputs.build_windows
+        with:
+          name: windows-validation-${{ github.sha }}
+          path: |
+            build/installer/NN4KSetup-*.exe
+            build/installer/NN4K-*-windows-portable.zip
+            build/installer/checksums.txt
+          if-no-files-found: error
+          retention-days: 7
