@@ -74,7 +74,6 @@ dependencies:
   # windows_elevation.dart)
   win32: ^6.3.0
   ffi: ^2.1.4
-  google_fonts: ^8.2.0
 
   # Иконка в системном трее + меню (см. ROADMAP.md, трек 7)
   tray_manager: ^0.5.3
@@ -158,6 +157,20 @@ flutter:
     - assets/tray_icon_macos.png
     - assets/tray_icon_proxy_macos.png
     - assets/tray_icon_tun_macos.png
+    - assets/fonts/OFL.txt
+    - assets/fonts/SOURCE.md
+
+  # Exact Inter files formerly requested by google_fonts 8.2.0. Bundle them
+  # locally: typography must not create network requests or trust a font cache.
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Inter-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-SemiBold.ttf
+          weight: 600
 
   shaders:
     - shaders/color_bends.frag

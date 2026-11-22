@@ -81,10 +81,28 @@ try {
         'data\icudtl.dat', 'data\app.so', 'data\flutter_assets\AssetManifest.bin',
         'assets\xray\xray.exe', 'assets\xray\wintun.dll',
         'assets\xray\LICENSE', 'assets\xray\LICENSE-Wintun',
-        'assets\sing-box\sing-box.exe', 'assets\sing-box\LICENSE'
+        'assets\sing-box\sing-box.exe', 'assets\sing-box\LICENSE',
+        'data\flutter_assets\FontManifest.json',
+        'data\flutter_assets\assets\fonts\OFL.txt',
+        'data\flutter_assets\assets\fonts\SOURCE.md'
     )) {
         if (-not (Test-Path -LiteralPath (Join-Path $release $relative) -PathType Leaf)) {
             throw "Incomplete runnable bundle: $relative. Rebuild before packaging; never distribute nn4k.exe alone."
+        }
+    }
+    # These are the exact Inter files used by the original UI. A stale bundle
+    # without local fonts must not be distributed, even when -SkipBuild is used.
+    $fontPins = @(
+        @{ Name = 'Inter-Regular.ttf'; Bytes = 324796; Sha256 = '15b294b67f2f8bbc04d990023ef4aec66502b87dc9040d84abe5f896ccb693de' },
+        @{ Name = 'Inter-Medium.ttf'; Bytes = 325280; Sha256 = '36a36ff7ac46dc2aeceac3a80a87a67e7b844b8fc936699259aac8fba9bcf734' },
+        @{ Name = 'Inter-SemiBold.ttf'; Bytes = 326024; Sha256 = '334bb2c51aeba5f566abac8d03a7e75ab3234d6926b52e92a85dc704129258b5' }
+    )
+    foreach ($font in $fontPins) {
+        $path = Join-Path $release ('data\flutter_assets\assets\fonts\' + $font.Name)
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf) -or
+            (Get-Item -LiteralPath $path).Length -ne $font.Bytes -or
+            (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $font.Sha256) {
+            throw 'A bundled Inter font is missing or differs from its original hash pin; rebuild before packaging.'
         }
     }
     $allowedNative = @(

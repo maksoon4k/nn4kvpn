@@ -21,15 +21,15 @@ performed, as required by this project's `CLAUDE.md`.
 
 | Check | Recorded result |
 | --- | --- |
-| Full Flutter unit/widget suite | **316 tests passed**, including deep-link, bounded download, IPC, system-tool path, proxy-lease, connection-lifecycle, updater and original first-run setup regressions. |
+| Full Flutter unit/widget suite | **323 tests passed**, including deep-link, bounded download, IPC, system-tool path, proxy-lease, connection-lifecycle, updater, original first-run setup and seven bundled/offline typography regressions. |
 | Dart analyzer | No errors or warnings; **15 informational lints** remain (UI deprecations/style and developer-tool imports). |
-| Locked hosted Pub packages queried in OSV | **123 packages**, no known reported vulnerabilities returned on the review date. |
+| Locked hosted Pub packages queried in OSV | **122 packages**, no known reported vulnerabilities returned after removing `google_fonts`; no other package version changed. |
 | OSV scope | Pub hosted packages only; Flutter SDK, native cores, drivers and embedded/native dependencies excluded. |
 | Windows tooling scripts | **9 scripts** passed syntax checks; **17 offline publishing-guard tests** passed, including identity/privacy changes, asset conflicts, tampering, safe retries and unpublished drafts without a tag. |
 | Windows build and packaging | Release **1.4.3+8** compiled for `maksoon4k/nn4kvpn`; Inno Setup **7.1.1** produced the per-user x64 installer. |
-| Bundle and portable ZIP | **310 files / 167084737 runtime bytes**; every ZIP file matched the bundle's size/SHA-256. No unexpected native binaries/scripts, reparse points, unsafe paths or duplicate entries found. |
+| Earlier bundle and portable ZIP baseline | **310 files / 167084737 runtime bytes**; every ZIP file matched the bundle's size/SHA-256. No unexpected native binaries/scripts, reparse points, unsafe paths or duplicate entries found. Final local-font build verification is pending. |
 | Isolated `--safe-start` UI | Built bundle, extracted portable and first-run checks opened and exited normally with code **0**; no observed core children or proxy/URI changes. Later TCP snapshots were zero; see the initial-observation limitation below. |
-| Source publication secret scan | **338 candidate files**, **293 text files** inspected with token/key/credential-URL/query/JWT heuristics; two findings were synthetic credential-URL test fixtures, not real credentials. Binary images were excluded. |
+| Source publication secret scan | **344 candidate files**, **296 text files** inspected with token/key/credential-URL/query/JWT heuristics; two findings were synthetic credential-URL test fixtures, not real credentials. Binary images/fonts were excluded. |
 | Live network/privacy behavior | Not certified; no live Proxy/TUN tests performed. |
 | End-to-end automatic upgrade | Not yet exercised with a later published release. |
 
@@ -41,9 +41,16 @@ The [initial hosted Windows checks](https://github.com/maksoon4k/nn4kvpn/actions
 also passed **316 Flutter tests**, the then-current **14 publishing-guard tests**,
 analysis and complete installer/portable compilation. A subsequent publishing
 tool fix expands the guards to 17 and adds isolated startup checks to the hosted
-build workflows; its hosted result is recorded after that run completes.
+build workflows. [That expanded run](https://github.com/maksoon4k/nn4kvpn/actions/runs/45078475411)
+passed analysis, all 316 Flutter tests, 17 guards and packaging, but **failed the
+startup gate** after observing six TCP entries. It was not treated as a passing
+release validation. The local-font fix is being validated before publication.
 
 ### Artifact identity
+
+**Pre-font-fix baseline only — not final published release assets.** The
+following files were inspected earlier; rebuilding changes installer/ZIP hashes.
+Final release identity must be recorded after the local-font build and checks.
 
 | Artifact | Bytes | SHA-256 |
 | --- | ---: | --- |
@@ -65,8 +72,23 @@ by the test process, but did not record states or endpoint classes, forced the
 process to terminate, and did not retain a valid exit code. Later stricter
 checks of the same build and extracted portable files, including a fresh
 first-run profile, recorded **zero** owned TCP entries at their observation
-points and normal exit code **0**. The first observation was **not reproduced
-or explained**; it must not be silently classified as harmless.
+points and normal exit code **0**. The expanded hosted run later observed six
+entries: three unspecified `Bound` sockets and three non-loopback `Established`
+connections to port 443. Publication remained blocked on this failure.
+
+Source inspection found an overlooked runtime-network path: the UI used
+`GoogleFonts.inter` with no bundled fonts, so an empty font cache caused three
+Inter weights to be requested from `fonts.gstatic.com`. This is a concrete
+unintentional startup dependency, consistent with the hosted socket pattern,
+but the recorded snapshots do not prove the actual remote host or conclusively
+attribute the earlier outlier. An isolated replay of the unchanged, uncached
+8.2.0 library confirmed the three font HTTP requests using a mock client and
+verified local font responses, without using a real profile or network.
+The fix removes `google_fonts` and its cache/
+HTTP loader, bundles the **same hash-verified Inter files** and SIL license, and
+retains the UI style metrics. New regressions check font bytes, the local font
+manifest, the license and absence of HTTP-client creation when building text.
+Strict hosted UI/network observation is repeated; its checks are not weakened.
 
 These are process-table snapshots, not packet capture. They cannot exclude
 short-lived TCP, UDP/DNS activity or all subprocess behavior. `--safe-start`
@@ -153,6 +175,9 @@ compatibility test remains pending. See [build notes](WINDOWS_BUILD.md).
   the Pub lockfile and verify the pinned Inno Setup compiler.
 - Whitelist packaged core runtime assets and license files, excluding upstream
   launcher scripts and arbitrary files left in core asset directories.
+- Remove online font loading and external font-cache trust. Bundle the original
+  Inter 400/500/600 files and their SIL license; both tests and packaging enforce
+  their byte/hash pins, including when packaging an existing build.
 
 ## Remaining risks and trust boundaries
 
@@ -196,9 +221,9 @@ compatibility test remains pending. See [build notes](WINDOWS_BUILD.md).
 
 ## Follow-up before treating a release as validated
 
-- Repeat isolated startup/network observation in a disposable VM if investigating
-  the unreproduced first TCP result. Do not treat zero snapshots as a packet trace
-  or use real profiles/connection controls on the user's machine.
+- Repeat strict hosted startup/network observation after removing the online
+  font loader. Do not treat zero snapshots as a packet trace or use real
+  profiles/connection controls on the user's machine.
 - Authenticate the maintainer locally, inspect source for secrets, verify the
   requested repository is private and publish only verified release assets.
 - Separately test upgrade to a genuinely newer release in a disposable user/VM;

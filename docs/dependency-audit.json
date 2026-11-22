@@ -1,7 +1,7 @@
 {
   "findings": [],
-  "checkedAt": "2026-11-22T19:57:30.8522439Z",
-  "queriedPackages": 123,
+  "checkedAt": "2026-11-22T22:52:49.4105717Z",
+  "queriedPackages": 122,
   "ecosystem": "Pub",
-  "lockfileSha256": "d9a6429b32c753055700d1165faf658ce031b0f3647483ddc2c9b5ff39fbd4de"
+  "lockfileSha256": "5f2380525b2e716d9e2a03077f586671f8e20c12023bea50eb41c1b1bbd0ec0a"
 }

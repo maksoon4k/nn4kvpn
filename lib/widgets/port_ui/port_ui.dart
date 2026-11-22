@@ -24,7 +24,6 @@ import 'package:flutter/material.dart'
     show Colors, Icons, InputBorder, InputDecoration, Material, MaterialType, TextField;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 part 'port_theme.dart';
 part 'port_tokens.dart';

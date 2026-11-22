@@ -80,6 +80,9 @@ extraction; native source and embedded dependencies need separate review.
 
 The application bundle is `build\windows\x64\runner\Release\nn4k.exe` plus
 its DLLs, data and whitelisted core assets. Do not distribute the EXE alone.
+Inter fonts are included locally with the original byte/hash pins and SIL
+license (`assets/fonts/SOURCE.md`). The UI no longer has a runtime Google Fonts
+download/cache path; text-style metrics and the original setup flow are retained.
 The CMake `INSTALL` target is staging, not system installation: its prefix is
 forced to the executable's build directory on every configuration. This avoids
 a stale failed-configuration cache copying runtime files into `C:\Program Files`.
@@ -125,6 +128,8 @@ checksums.txt
 Check the final bundle/ZIP for unexpected executables or launcher scripts.
 The packaging helper rejects unlisted native binaries, launcher scripts and
 reparse points, and rejects an incomplete runtime bundle before invoking Inno.
+It also requires the local font manifest/license and validates all three Inter
+font hashes, so a stale pre-font-fix bundle cannot be packaged with `-SkipBuild`.
 The installer is per-user, defaults to `%LocalAppData%\NN4K`, retains its fixed
 AppId and preserves `%AppData%\flux`. No Authenticode signing is configured.
 It accepts only an x64 Windows OS (`ArchitecturesAllowed=x64os`), because the
@@ -186,28 +191,35 @@ their JSON/process-output evidence. No real profile or Proxy/TUN connection is u
 
 ## Recorded status — 2026-11-23
 
-- Full suite: **316 tests passed**, including the original first-run setup,
-  completion/skip/replay and background-default regressions.
+- Full suite after the local-font fix: **323 tests passed**, including the original
+  first-run setup, completion/skip/replay, background-default and seven
+  bundled/offline typography regressions.
 - Analyzer: **no errors/warnings**, 15 informational lints.
+- Refreshed OSV query: **122 locked hosted Pub packages**, no returned advisories;
+  the only lockfile change is removal of `google_fonts` 8.2.0. Native/embedded
+  components and the Flutter SDK are outside this query's scope.
 - SDK **10.0.26100.0** was provisioned on D: from verified Microsoft packages
   without running Burn/MSI installation again. The x64/x86 C++/resource probes
   compiled, linked against UM/Universal CRT libraries and executed successfully
   using process-local SDK settings; no system SDK registration changes needed.
-- Windows Release compilation and Inno Setup **7.1.1** packaging succeeded.
+- The earlier Windows Release compilation and Inno Setup **7.1.1** packaging succeeded.
   Runtime bundle: **310 files / 167084737 bytes**. Every portable ZIP file was
   size/SHA-256 verified against the bundle; no unexpected native binaries,
   launcher scripts, reparse points, duplicate entries or unsafe ZIP paths found.
 - Main-screen, extracted-portable and first-run `--safe-start` checks opened the
   NN4K window and closed normally with exit code **0**, without observed core
   children or proxy/URI registry changes. Later TCP snapshots were zero;
-  the first unexplained six-entry observation is retained in the security review.
+  the first six-entry observation is retained in the security review. The later
+  expanded hosted check reproduced startup TCP activity; this was a release blocker.
 - All **9 Windows tooling scripts** passed syntax validation, and **17 offline
   publication-guard scenarios** passed. Inherited Android tooling is outside this
   validation; its existing syntax problems were not treated as Windows failures.
 - [Initial hosted Windows checks](https://github.com/maksoon4k/nn4kvpn/actions/runs/45076118325)
   passed analysis, **316 Flutter tests**, the then-current **14 publishing guards**
-  and a full installer/portable build. Expanded guard/startup checks are recorded
-  after their subsequent hosted run completes.
+  and a full installer/portable build. [Expanded checks](https://github.com/maksoon4k/nn4kvpn/actions/runs/45078475411)
+  passed analysis, 316 tests, 17 guards and packaging, but failed startup TCP
+  observation. The UI's overlooked online font loader was removed and the same
+  fonts bundled; a fresh complete validation is required before publishing.
 - Local GitHub authentication and private repository **maksoon4k/nn4kvpn**
   (repository ID **1468003190**) were verified. Source/release publication and
   hosted CI results are recorded only after the remote operations finish.

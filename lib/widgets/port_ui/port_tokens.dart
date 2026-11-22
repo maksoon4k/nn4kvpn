@@ -53,33 +53,38 @@ abstract final class PortColors {
 
 /// Типографика shadcn/ui (стандартная документированная шкала —
 /// text-xl/lg/base/sm font-semibold/medium tracking-tight и т.п.), не
-/// специфична под этот проект. Используем Inter тем же способом, что и
-/// раньше через ShadTextTheme.fromGoogleFont(GoogleFonts.inter).
+/// специфична под этот проект. Те же файлы Inter и метрики включены в
+/// приложение: первый запуск не скачивает шрифты и не читает внешний кеш.
 abstract final class PortText {
-  static TextStyle get h4 => GoogleFonts.inter(
+  static TextStyle get h4 => TextStyle(
+    fontFamily: 'Inter',
     fontSize: 20,
     fontWeight: FontWeight.w600,
     letterSpacing: -0.4,
     color: PortColors.foreground,
   );
-  static TextStyle get large => GoogleFonts.inter(
+  static TextStyle get large => TextStyle(
+    fontFamily: 'Inter',
     fontSize: 18,
     fontWeight: FontWeight.w600,
     color: PortColors.foreground,
   );
-  static TextStyle get p => GoogleFonts.inter(
+  static TextStyle get p => TextStyle(
+    fontFamily: 'Inter',
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 28 / 16,
     color: PortColors.foreground,
   );
-  static TextStyle get small => GoogleFonts.inter(
+  static TextStyle get small => TextStyle(
+    fontFamily: 'Inter',
     fontSize: 14,
     fontWeight: FontWeight.w500,
     height: 1,
     color: PortColors.foreground,
   );
-  static TextStyle get muted => GoogleFonts.inter(
+  static TextStyle get muted => TextStyle(
+    fontFamily: 'Inter',
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: PortColors.mutedForeground,
