@@ -181,6 +181,8 @@ and fail-closed retry/tampering/privacy scenarios, and cannot publish to GitHub.
 The **Windows Checks** workflow also has a manual `build_windows` option. It
 performs analysis, tests and a complete Windows installer/ZIP build with read-only
 repository permissions, then stores CI artifacts; it never publishes a release.
+The expanded workflow also runs both isolated `--safe-start` UI modes and retains
+their JSON/process-output evidence. No real profile or Proxy/TUN connection is used.
 
 ## Recorded status — 2026-11-23
 
@@ -199,9 +201,13 @@ repository permissions, then stores CI artifacts; it never publishes a release.
   NN4K window and closed normally with exit code **0**, without observed core
   children or proxy/URI registry changes. Later TCP snapshots were zero;
   the first unexplained six-entry observation is retained in the security review.
-- All **9 Windows tooling scripts** passed syntax validation, and **14 offline
+- All **9 Windows tooling scripts** passed syntax validation, and **17 offline
   publication-guard scenarios** passed. Inherited Android tooling is outside this
   validation; its existing syntax problems were not treated as Windows failures.
+- [Initial hosted Windows checks](https://github.com/maksoon4k/nn4kvpn/actions/runs/45076118325)
+  passed analysis, **316 Flutter tests**, the then-current **14 publishing guards**
+  and a full installer/portable build. Expanded guard/startup checks are recorded
+  after their subsequent hosted run completes.
 - Local GitHub authentication and private repository **maksoon4k/nn4kvpn**
   (repository ID **1468003190**) were verified. Source/release publication and
   hosted CI results are recorded only after the remote operations finish.

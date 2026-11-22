@@ -30,6 +30,20 @@ function Invoke-GitHubJson([string[]]$Arguments) {
     return ($result.Output | ConvertFrom-Json)
 }
 
+function Get-DraftReleaseId($Draft) {
+    if ($Draft.isDraft -ne $true) {
+        throw 'A published version already exists. Bump pubspec.yaml; never replace published update binaries.'
+    }
+    if ($Draft.isPrerelease -or $Draft.tagName -cne "v$Version" -or $Draft.targetCommitish -cne $TargetCommit) {
+        throw 'The existing release is not the expected stable draft/target; nothing will be overwritten.'
+    }
+    $id = 0L
+    if (-not [long]::TryParse([string]$Draft.databaseId, [ref]$id) -or $id -le 0) {
+        throw 'GitHub did not return a valid draft release identity.'
+    }
+    return $id
+}
+
 $repositoryInfo = Invoke-GitHubJson -Arguments @('api', "repos/$Repository", '--jq', '{id: .id, private: .private, full_name: .full_name}')
 if (-not $repositoryInfo.private -or $repositoryInfo.full_name.ToLowerInvariant() -ne $Repository.ToLowerInvariant()) {
     throw 'Publication is restricted to the exact requested private repository.'
@@ -60,12 +74,11 @@ foreach ($file in $files[0..1]) {
     if (@($checksums | Where-Object { $_ -ceq $expectedLine }).Count -ne 1) { throw 'checksums.txt does not match the local release artifacts.' }
 }
 
-$lookup = Invoke-GitHub -Arguments @('release', 'view', "v$Version", '--repo', $Repository, '--json', 'isDraft')
-$existing = $lookup.Output
+$releaseId = $null
+$lookupFields = 'databaseId,isDraft,isPrerelease,tagName,targetCommitish'
+$lookup = Invoke-GitHub -Arguments @('release', 'view', "v$Version", '--repo', $Repository, '--json', $lookupFields)
 if ($lookup.ExitCode -eq 0) {
-    if (-not ($existing | ConvertFrom-Json).isDraft) {
-        throw 'A published version already exists. Bump pubspec.yaml; never replace published update binaries.'
-    }
+    $releaseId = Get-DraftReleaseId -Draft ($lookup.Output | ConvertFrom-Json)
 } elseif ((Get-Content -LiteralPath $errorFile -Raw) -notmatch 'release not found|HTTP 404|Not Found') {
     throw 'Release lookup failed; an access/network error is not a missing release.'
 }
@@ -97,21 +110,23 @@ private and clarify redistribution rights with the original author.
 '@
 $notesFile = Join-Path $ArtifactDirectory 'release-notes.md'
 [IO.File]::WriteAllText($notesFile, $notesTemplate.Replace('__VERSION__', $Version), [Text.UTF8Encoding]::new($false))
-if (-not $existing) {
+if ($null -eq $releaseId) {
     $arguments = @('release', 'create', "v$Version", '--repo', $Repository,
         '--draft', '--title', "NN4K $Version", '--notes-file', $notesFile)
     $arguments += @('--target', $TargetCommit)
     $created = Invoke-GitHub -Arguments $arguments
     if ($created.ExitCode -ne 0) { throw 'Could not create draft release' }
+    $draft = Invoke-GitHubJson -Arguments @('release', 'view', "v$Version", '--repo', $Repository, '--json', $lookupFields)
+    $releaseId = Get-DraftReleaseId -Draft $draft
 }
 
 # No --clobber: a concurrent publication must never permit replacing an already
 # uploaded binary. A retry skips identical draft assets and rejects conflicts.
-$releaseId = $null
+# GitHub's /releases/tags endpoint can return 404 for a new unpublished draft.
+# Resolve its numeric identity through gh, then pin every API read to that ID.
 foreach ($file in $files) {
-    $release = Invoke-GitHubJson -Arguments @('api', "repos/$Repository/releases/tags/v$Version")
+    $release = Invoke-GitHubJson -Arguments @('api', "repos/$Repository/releases/$releaseId")
     if (-not $release.draft -or $release.prerelease -or $release.tag_name -cne "v$Version" -or $release.target_commitish -cne $TargetCommit) { throw 'The release is no longer the expected stable draft/target; nothing will be overwritten.' }
-    if ($null -eq $releaseId) { $releaseId = $release.id }
     if ($release.id -ne $releaseId) { throw 'The draft identity changed during publication.' }
     $name = [IO.Path]::GetFileName($file)
     $expected = $artifactInfo[$name]
@@ -131,7 +146,7 @@ foreach ($file in $files) {
 
 # The release remains a DRAFT until GitHub confirms every uploaded size/digest.
 # Recheck identity and draft state immediately before exposing it through latest.
-$release = Invoke-GitHubJson -Arguments @('api', "repos/$Repository/releases/tags/v$Version")
+$release = Invoke-GitHubJson -Arguments @('api', "repos/$Repository/releases/$releaseId")
 if (-not $release.draft -or $release.prerelease -or $release.id -ne $releaseId -or $release.tag_name -cne "v$Version" -or $release.target_commitish -cne $TargetCommit) { throw 'The release changed before final verification; publication was stopped.' }
 if (@($release.assets).Count -ne $files.Count) { throw 'Unexpected assets in the draft; publication was stopped.' }
 foreach ($file in $files) {

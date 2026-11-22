@@ -119,6 +119,8 @@ draft unpublished. It refuses to overwrite an already published version;
 retries skip identical draft assets and reject conflicting assets without
 replacing them. The script also checks the target repository is private,
 checks local checksum records and requires the exact target commit SHA.
+It resolves the draft's numeric release ID and reads assets by that pinned ID;
+an unpublished draft need not be accessible through GitHub's tag endpoint.
 
 Do not race manual publication against the automatic Windows Release workflow.
 For the initial locally verified upload, the bootstrap commit uses `[skip ci]`

@@ -76,6 +76,22 @@ jobs:
         env:
           INNO_COMPILER: ${{ steps.inno.outputs.compiler }}
         run: ./scripts/build_installer.ps1 -UpdateRepository $env:GITHUB_REPOSITORY -IsccPath $env:INNO_COMPILER
+      - name: Isolated safe-start UI checks (no live Proxy/TUN)
+        shell: pwsh
+        run: |
+          ./scripts/smoke_windows.ps1 -Directory "$env:RUNNER_TEMP\nn4k-smoke"
+          ./scripts/smoke_windows.ps1 -FirstRun -Directory "$env:RUNNER_TEMP\nn4k-smoke"
+      - name: Retain isolated startup evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: windows-startup-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/nn4k-smoke/**/report.json
+            ${{ runner.temp }}/nn4k-smoke/**/stdout.log
+            ${{ runner.temp }}/nn4k-smoke/**/stderr.log
+          if-no-files-found: warn
+          retention-days: 14
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-${{ needs.check-version.outputs.version }}

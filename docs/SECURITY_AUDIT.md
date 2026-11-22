@@ -25,7 +25,7 @@ performed, as required by this project's `CLAUDE.md`.
 | Dart analyzer | No errors or warnings; **15 informational lints** remain (UI deprecations/style and developer-tool imports). |
 | Locked hosted Pub packages queried in OSV | **123 packages**, no known reported vulnerabilities returned on the review date. |
 | OSV scope | Pub hosted packages only; Flutter SDK, native cores, drivers and embedded/native dependencies excluded. |
-| Windows tooling scripts | **9 scripts** passed syntax checks; **14 offline publishing-guard tests** passed, including identity/privacy changes, asset conflicts, tampering and safe retries. |
+| Windows tooling scripts | **9 scripts** passed syntax checks; **17 offline publishing-guard tests** passed, including identity/privacy changes, asset conflicts, tampering, safe retries and unpublished drafts without a tag. |
 | Windows build and packaging | Release **1.4.3+8** compiled for `maksoon4k/nn4kvpn`; Inno Setup **7.1.1** produced the per-user x64 installer. |
 | Bundle and portable ZIP | **310 files / 167084737 runtime bytes**; every ZIP file matched the bundle's size/SHA-256. No unexpected native binaries/scripts, reparse points, unsafe paths or duplicate entries found. |
 | Isolated `--safe-start` UI | Built bundle, extracted portable and first-run checks opened and exited normally with code **0**; no observed core children or proxy/URI changes. Later TCP snapshots were zero; see the initial-observation limitation below. |
@@ -36,6 +36,12 @@ performed, as required by this project's `CLAUDE.md`.
 The dependency-scan snapshot is [dependency-audit.json](dependency-audit.json).
 It identifies the exact reviewed lockfile hash. A clean scan only means no
 matching advisories were returned at that time; it is not a code review.
+
+The [initial hosted Windows checks](https://github.com/maksoon4k/nn4kvpn/actions/runs/45076118325)
+also passed **316 Flutter tests**, the then-current **14 publishing-guard tests**,
+analysis and complete installer/portable compilation. A subsequent publishing
+tool fix expands the guards to 17 and adds isolated startup checks to the hosted
+build workflows; its hosted result is recorded after that run completes.
 
 ### Artifact identity
 
@@ -99,6 +105,9 @@ compatibility test remains pending. See [build notes](WINDOWS_BUILD.md).
   owned proxy values before exit; the per-user installer waits for the caller.
 - Draft-first release publishing verifies uploaded sizes/digests before exposing
   a release through `latest`; published versions must not be overwritten.
+- Resolve and pin a positive numeric draft release ID before reading its assets.
+  GitHub can return 404 from the tag endpoint for an unpublished draft; this
+  real first-publication failure is now covered by the offline API stub.
 
 ### Native process and connection lifecycle
 
