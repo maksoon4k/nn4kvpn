@@ -82,12 +82,25 @@ A private repository requires GitHub access, including for release downloads.
 - `NN4K-<version>-windows-portable.zip`: extract and run `nn4k.exe`.
 - `checksums.txt`: SHA-256 hashes of both files.
 
+The published [**v1.4.3**](https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.3)
+uses the exact CI-built installer/portable bytes. See the
+[validation evidence](docs/windows-release-validation.json) and
+[qualified review](docs/SECURITY_AUDIT.md) for passed checks and untested behavior.
+
+The CI runtime needs a compatible **Microsoft Visual C++ v14 x64 Redistributable**
+if it is not already installed; use
+[Microsoft's official guidance](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist).
+Windows N/KN also needs the appropriate **Media Feature Pack**. These system
+prerequisites are not bundled and may need admin rights to install; NN4K's own
+installer remains per-user. Clean-machine compatibility remains untested.
+
 No Authenticode signing is configured. Windows may show an unknown-publisher
 or SmartScreen warning. A matching checksum verifies integrity against the
 trusted release metadata; it does not prove that a program is safe.
 
-Release publication is draft-first: CI verifies every uploaded asset's size
-and SHA-256 before publishing. Published versions must not be overwritten.
+Release publication is draft-first: the publisher verifies every uploaded
+asset's size and SHA-256 before publishing. Published versions must not be
+overwritten.
 See [Windows updates](docs/WINDOWS_UPDATES.md).
 
 ## Building from source

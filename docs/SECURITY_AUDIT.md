@@ -26,10 +26,13 @@ performed, as required by this project's `CLAUDE.md`.
 | Locked hosted Pub packages queried in OSV | **122 packages**, no known reported vulnerabilities returned after removing `google_fonts`; no other package version changed. |
 | OSV scope | Pub hosted packages only; Flutter SDK, native cores, drivers and embedded/native dependencies excluded. |
 | Windows tooling scripts | **9 scripts** passed syntax checks; **17 offline publishing-guard tests** passed, including identity/privacy changes, asset conflicts, tampering, safe retries and unpublished drafts without a tag. |
-| Windows build and packaging | Release **1.4.3+8** compiled for `maksoon4k/nn4kvpn`; Inno Setup **7.1.1** produced the per-user x64 installer. |
-| Earlier bundle and portable ZIP baseline | **310 files / 167084737 runtime bytes**; every ZIP file matched the bundle's size/SHA-256. No unexpected native binaries/scripts, reparse points, unsafe paths or duplicate entries found. Final local-font build verification is pending. |
-| Isolated `--safe-start` UI | Built bundle, extracted portable and first-run checks opened and exited normally with code **0**; no observed core children or proxy/URI changes. Later TCP snapshots were zero; see the initial-observation limitation below. |
-| Source publication secret scan | **344 candidate files**, **296 text files** inspected with token/key/credential-URL/query/JWT heuristics; two findings were synthetic credential-URL test fixtures, not real credentials. Binary images/fonts were excluded. |
+| Windows build and packaging | Release **1.4.3+8** compiled for `maksoon4k/nn4kvpn`; Inno Setup **7.1.1** produced the per-user x64 installer. The published files are the exact artifacts from the final successful hosted build. |
+| Published bundle and portable ZIP | **315 files / 154694931 runtime bytes**; every ZIP file matched the verified CI bundle's size/SHA-256. No unexpected native binaries/scripts, reparse points, unsafe paths or duplicate entries found. Inter pins/license and the compiled update repository were verified. |
+| Isolated `--safe-start` UI | Both main-screen and first-run modes passed on GitHub and locally using the exact CI portable: windows opened, normal exit **0**, two available zero-count TCP snapshots per mode, no observed core children, unchanged proxy/URI state. These are limited observations, not packet capture. |
+| Private release publication | Stable **v1.4.3**, release ID **454794402**, published into the verified private repository **1468003190**. Tag/latest and all three asset IDs, sizes and GitHub SHA-256 digests were checked. |
+| Independent release download | All three published assets were downloaded separately to D: and rehashed; the portable ZIP's **315 files** again matched the verified CI runtime. |
+| Production updater replay | Actual published metadata and separately downloaded installer bytes accepted through the production updater with a mock client. Newer-only/no-downgrade, final verification, same-size tampering rejection and owned-copy cleanup passed. No application token, installer launch or Proxy/TUN used. |
+| Source publication secret scan | **345 candidate files**, **297 text files** inspected with token/key/credential-URL/query/JWT heuristics; two findings were synthetic credential-URL test fixtures, not real credentials. Binary images/fonts were excluded. |
 | Live network/privacy behavior | Not certified; no live Proxy/TUN tests performed. |
 | End-to-end automatic upgrade | Not yet exercised with a later published release. |
 
@@ -44,26 +47,45 @@ tool fix expands the guards to 17 and adds isolated startup checks to the hosted
 build workflows. [That expanded run](https://github.com/maksoon4k/nn4kvpn/actions/runs/45078475411)
 passed analysis, all 316 Flutter tests, 17 guards and packaging, but **failed the
 startup gate** after observing six TCP entries. It was not treated as a passing
-release validation. The local-font fix is being validated before publication.
+release validation. After bundling the original fonts and removing their runtime
+loader, the [final Windows Checks run](https://github.com/maksoon4k/nn4kvpn/actions/runs/45081917123)
+passed analysis, **323 Flutter tests**, **17 publishing guards**, packaging and
+both strict startup modes. Its exact installer/portable bytes were published,
+not a subsequent rebuild.
+
+Sanitized durable evidence is retained in
+[windows-release-validation.json](windows-release-validation.json), including
+build/release identities, asset hashes, both hosted/local startup summaries,
+native imports, the limited updater replay and the earlier failed observation.
+CI artifact retention is seven days; the committed evidence does not depend on
+those artifacts remaining available.
 
 ### Artifact identity
 
-**Pre-font-fix baseline only — not final published release assets.** The
-following files were inspected earlier; rebuilding changes installer/ZIP hashes.
-Final release identity must be recorded after the local-font build and checks.
+**Published release assets**, built from
+`a6f1f80ac088d8d7250e98d8d67b2049553f90e6` and attached to
+[v1.4.3](https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.3).
+The tag targets that exact tested source commit. These hashes were checked
+before upload, against GitHub metadata and after a separate release download.
 
 | Artifact | Bytes | SHA-256 |
 | --- | ---: | --- |
-| `NN4KSetup-1.4.3.exe` | 42675019 | `6c9ede19f6b7fb9cdd1e8fa6df553fa88dfab48313fad4ea4060104168e8f7fd` |
-| `NN4K-1.4.3-windows-portable.zip` | 60309798 | `f210bd560b52603ceb7085903d06d62911f680906d41eb1783338acd52655aff` |
-| `checksums.txt` | 186 | `d9b552ae653a6c47680fe87cd4a66a8716e2f4d9449c06cb86d6d774f7379cfc` |
+| `NN4KSetup-1.4.3.exe` | 41665634 | `45df7bff26e653a2bb066188b12971679fc9bb287327114f49321bb90e7cb2fc` |
+| `NN4K-1.4.3-windows-portable.zip` | 58570060 | `15b7057b2e3fbdd0eec16802383a7e827f905f45840d368d783c6c9efa97c8a3` |
+| `checksums.txt` | 186 | `510a05f89020ccb348ffba82c0b72441a3180ae43629a1b51749d0969d9dbdb7` |
 
 The runner SHA-256 is
-`e780b8c6929f3812695810d78d4ac9dbdcde90cf79640efb19744827d0a2663a`;
+`3d39b00b3a21e3816ff5b07a4f59ecc88449db20a78af23a8b29acac4d50450c`;
 the compiled Dart AOT library is
-`b1902350dcd5f6d85b425178f650f8d591c14953b3f494e775d9c0940230638e`.
+`f4396446f1539f1f9534905b2b7de0f99af4834b1097da7520733d3eee92ce7f`.
 The expected repository slug was found in the AOT library. Hashes identify
 the inspected files, not their safety; the installer is **not Authenticode-signed**.
+
+A separate local baseline had **316 files / 168034454 runtime bytes** and a
+stale native CMake cache with empty Release C++ flags after earlier SDK failures.
+It was preserved as an external baseline and **was not published**. Fresh hosted
+artifacts were selected instead and also passed both local isolated startup
+modes. Local and hosted builds are not claimed to be byte-reproducible.
 
 ### Startup-observation limitations
 
@@ -88,7 +110,8 @@ The fix removes `google_fonts` and its cache/
 HTTP loader, bundles the **same hash-verified Inter files** and SIL license, and
 retains the UI style metrics. New regressions check font bytes, the local font
 manifest, the license and absence of HTTP-client creation when building text.
-Strict hosted UI/network observation is repeated; its checks are not weakened.
+The repeated strict hosted UI/network observation passed in both modes; its
+TCP rejection and production onboarding/background defaults were not weakened.
 
 These are process-table snapshots, not packet capture. They cannot exclude
 short-lived TCP, UDP/DNS activity or all subprocess behavior. `--safe-start`
@@ -97,11 +120,15 @@ smoke test alone skips onboarding and hides the background in **disposable
 settings only**; the production defaults, original setup steps and user
 appearance settings remain intact.
 
-Native direct-import inspection also identified Windows Media Foundation in the
-video plugin (`MFPlat.dll`), and external JVM/VC-runtime dependencies in the
-inherited JNI asset (`jvm.dll`, `VCRUNTIME140.dll`). These are not bundled.
-JNI was not exercised by the Windows startup check; a clean-machine/Windows N
-compatibility test remains pending. See [build notes](WINDOWS_BUILD.md).
+Direct-import inspection of the **published CI runner and plugins** identified
+unbundled `MSVCP140.dll`, `VCRUNTIME140.dll` and `VCRUNTIME140_1.dll`: a compatible
+**Microsoft Visual C++ v14 x64 Redistributable** is required. The video plugin
+also imports `MFPlat.dll`; Windows N/KN needs the appropriate **Media Feature Pack**.
+The inherited JNI asset imports external `jvm.dll` and VC-runtime DLLs.
+These components are not bundled, and the successful startup machines already
+had the relevant Windows prerequisites. JNI/JVM functionality and a
+clean-machine/Windows N compatibility test remain untested. See
+[build notes](WINDOWS_BUILD.md).
 
 ## Remediations
 
@@ -219,15 +246,18 @@ compatibility test remains pending. See [build notes](WINDOWS_BUILD.md).
    with the original author before distributing source/binaries. Core license
    files alone do not grant a license for the application.
 
-## Follow-up before treating a release as validated
+## Remaining follow-up
 
-- Repeat strict hosted startup/network observation after removing the online
-  font loader. Do not treat zero snapshots as a packet trace or use real
-  profiles/connection controls on the user's machine.
-- Authenticate the maintainer locally, inspect source for secrets, verify the
-  requested repository is private and publish only verified release assets.
+- Keep the limits of the completed source/build/startup checks: zero TCP
+  snapshots are not a packet trace or a live VPN/privacy certification. Do not
+  use real profiles/connection controls on the user's machine for testing.
 - Separately test upgrade to a genuinely newer release in a disposable user/VM;
   verify rollback/failure behavior, data preservation and restart without live
   Proxy/TUN testing on the user's machine.
+- Test clean-machine Windows prerequisites and Windows N/KN separately; startup
+  does not validate the inherited JNI/JVM asset.
+- Revoke the PAT previously exposed in chat and create a separate expiring,
+  repository-scoped **Contents: Read-only** updater token. Revocation of that
+  exposed token has not been verified; do not reuse it.
 - Resolve licensing; consider independent release signing and a durable,
   ownership-aware crash-recovery mechanism for proxy state.

@@ -103,8 +103,9 @@ and same-user malware is outside the local-file trust boundary.
 3. Run the Windows checks and build with
    `--dart-define=NN4K_UPDATE_REPOSITORY=maksoon4k/nn4kvpn`. For a different
    fork, substitute its exact repository. Do not pass tokens.
-4. Package the installer and portable ZIP; retain `checksums.txt`. Do an
-   isolated `--safe-start` smoke check without live Proxy/TUN testing.
+4. Package the installer and portable ZIP; retain `checksums.txt`. Run both
+   strict isolated `--safe-start` modes without live Proxy/TUN testing. Publish
+   the exact tested bytes, not an unchecked rebuild of the same commit.
 5. Use the Windows Release workflow, or the publishing script:
 
    ```powershell
@@ -123,7 +124,7 @@ It resolves the draft's numeric release ID and reads assets by that pinned ID;
 an unpublished draft need not be accessible through GitHub's tag endpoint.
 
 Do not race manual publication against the automatic Windows Release workflow.
-For the initial locally verified upload, the bootstrap commit uses `[skip ci]`
+For the initial verified CI-artifact upload, the bootstrap commit uses `[skip ci]`
 to avoid a simultaneous version-push release. The manual **Windows Checks**
 workflow can still be dispatched with `build_windows=true` to analyze, test and
 build the exact commit without publishing. Subsequent normal version commits
@@ -131,6 +132,51 @@ use the automatic release workflow; never use `--clobber` to resolve a conflict.
 
 Only the publishing CI job has `contents: write`. Workflow actions are pinned
 to commit SHAs. No Android/macOS release jobs run in this fork.
+
+## Initial release validation — 2026-11-23
+
+[v1.4.3](https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.3) is a published
+stable release in the verified private repository, release ID **454794402**.
+Its tag targets the exact tested build source
+`a6f1f80ac088d8d7250e98d8d67b2049553f90e6`.
+[Windows Checks](https://github.com/maksoon4k/nn4kvpn/actions/runs/45081917123)
+passed analysis, **323 Flutter tests**, **17 publishing guards**, packaging and
+both strict startup modes. The exact CI installer/portable bytes were published;
+the same extracted portable also passed both isolated modes locally.
+
+All three published assets were separately downloaded to D: and rehashed
+against both the original CI files and GitHub metadata. Every one of the
+portable archive's **315 files** matched the verified CI runtime. The installer
+asset ID is **780857529**, size **41665634 bytes**; complete hashes and identities
+are retained in [windows-release-validation.json](windows-release-validation.json)
+and the [security review](SECURITY_AUDIT.md).
+
+A limited replay used the actual published metadata and separately downloaded
+installer through the **production updater code with a mock HTTP client**:
+
+- Current `1.4.2` was offered `1.4.3`; `1.4.3+8` and `1.4.4` were not offered
+  that release, preserving newer-only/no-downgrade behavior.
+- Streaming and final size/SHA-256 validation passed. A changed middle byte in
+  an owned staged copy, with the original size/header retained, was rejected.
+- The staged test copy was removed and the original downloaded installer
+  remained unchanged.
+
+This did **not** use an application token, contact the network through the
+updater, launch the installer or exercise Proxy/TUN. It is not a live private
+credential/redirect test or an end-to-end upgrade/restart test. Installing this
+same version cannot prove upgrading to a genuinely newer release.
+
+Initial publication also recovered only the maintainer's pinned, still-empty
+unpublished draft after a target-only REST PATCH caused GitHub to substitute an
+`untagged-…` name. Recovery explicitly sent both `tag_name=v1.4.3` and the tested
+`target_commitish`, after rechecking author/repository identity and absence of
+assets/tags. No Git tag was deleted/replaced and no published binary was changed;
+this is not an exception to the publisher's version/target safeguards.
+
+The installer is unsigned. The CI runtime requires an unbundled compatible
+Visual C++ v14 x64 Redistributable; Windows N/KN also needs Media Feature Pack.
+See [Windows prerequisites](WINDOWS_BUILD.md#package-and-inspect). Licensing,
+clean-machine compatibility and live VPN/privacy behavior remain qualified.
 
 ## Troubleshooting
 
@@ -142,6 +188,8 @@ to commit SHAs. No Android/macOS release jobs run in this fork.
 | Missing installer/checksum | Verify the exact asset name, uploaded state and GitHub `digest` metadata. |
 | Hash/size mismatch | Do not run the file manually. Re-download only after investigating the release; never bypass validation. |
 | Elevated application | Stop the app and restart without administrator privileges. |
+| Missing MSVCP140/VCRUNTIME140 DLL | Install a compatible Microsoft Visual C++ v14 x64 Redistributable from Microsoft's official guidance; never fetch individual DLLs from third-party sites. |
+| Missing MFPlat.dll on Windows N/KN | Install the appropriate Media Feature Pack; clean-machine compatibility has not been validated. |
 | Automatic update remains ready | Disconnect manually, or leave it pending until VPN is idle. |
 | Same version not offered | Bump the semantic version; changing only `+buildNumber` is insufficient. |
 

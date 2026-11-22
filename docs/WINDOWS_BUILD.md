@@ -87,6 +87,12 @@ The CMake `INSTALL` target is staging, not system installation: its prefix is
 forced to the executable's build directory on every configuration. This avoids
 a stale failed-configuration cache copying runtime files into `C:\Program Files`.
 
+SDK failures can also leave a CMake cache with empty configuration flags. Before
+producing another local release, use a fresh native build configuration and
+check its Release compiler/runtime settings; preserve the old output separately
+instead of treating a successful incremental compile as proof of correct flags.
+The preliminary cached local runtime from this review was not published.
+
 The media plugin pins NuGet **5.10.0** by SHA-256 and WIL
 **1.0.220914.1** by version. Its "Nuget is not installed" stderr notice is a
 handled download path, not itself a build failure. The packaging helper checks
@@ -135,14 +141,22 @@ AppId and preserves `%AppData%\flux`. No Authenticode signing is configured.
 It accepts only an x64 Windows OS (`ArchitecturesAllowed=x64os`), because the
 packaged Wintun driver cannot run through ARM64 x64-application emulation.
 
-The native import inspection found that the media plugin imports Windows Media
-Foundation (`MFPlat.dll`). Windows N/KN editions need the appropriate Media
-Feature Pack; it is not bundled. The JNI native asset `dartjni.dll` imports
-`jvm.dll` and `VCRUNTIME140.dll`, which are not bundled either. JNI belongs to
-the inherited Android engine and is not used by the reviewed Windows connection
-path; the successful Windows startup is not a test of JNI/JVM functionality.
-Other inspected Windows startup binaries import system DLLs and bundled plugins,
-not a separate dynamic MSVC runtime. A clean-machine/Windows N test remains pending.
+The **published CI runner and native plugins** directly import `MSVCP140.dll`,
+`VCRUNTIME140.dll` and `VCRUNTIME140_1.dll`. They require a compatible **Microsoft
+Visual C++ v14 x64 Redistributable**, at least as recent as the MSVC toolset used
+to build them. These runtime DLLs are **not bundled**. Use
+[Microsoft's official guidance](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist),
+never DLL-download sites. Installing this system prerequisite may require admin
+rights; NN4K's own installer remains per-user.
+
+The video plugin imports Windows Media Foundation (`MFPlat.dll`). Windows N/KN
+editions need the appropriate **Media Feature Pack**, also not bundled.
+The JNI native asset `dartjni.dll` imports external `jvm.dll` and VC-runtime DLLs.
+JNI belongs to the inherited Android engine and is not used by the reviewed
+Windows connection path; successful Windows startup is not a JNI/JVM test.
+Import inspection only reads native images; it is not a functional dependency
+or clean-machine compatibility test. Clean-machine/Windows N validation remains
+pending.
 
 ## Isolated smoke check
 
@@ -202,15 +216,18 @@ their JSON/process-output evidence. No real profile or Proxy/TUN connection is u
   without running Burn/MSI installation again. The x64/x86 C++/resource probes
   compiled, linked against UM/Universal CRT libraries and executed successfully
   using process-local SDK settings; no system SDK registration changes needed.
-- The earlier Windows Release compilation and Inno Setup **7.1.1** packaging succeeded.
-  Runtime bundle: **310 files / 167084737 bytes**. Every portable ZIP file was
-  size/SHA-256 verified against the bundle; no unexpected native binaries,
+- The published **1.4.3+8** installer/portable were built by the final successful
+  hosted run from `a6f1f80ac088d8d7250e98d8d67b2049553f90e6` using Inno Setup
+  **7.1.1**. Runtime bundle: **315 files / 154694931 bytes**. Every portable ZIP
+  file was size/SHA-256 verified against the CI bundle, including after a
+  separate download of the published assets. No unexpected native binaries,
   launcher scripts, reparse points, duplicate entries or unsafe ZIP paths found.
-- Main-screen, extracted-portable and first-run `--safe-start` checks opened the
-  NN4K window and closed normally with exit code **0**, without observed core
-  children or proxy/URI registry changes. Later TCP snapshots were zero;
-  the first six-entry observation is retained in the security review. The later
-  expanded hosted check reproduced startup TCP activity; this was a release blocker.
+- Both strict main-screen and first-run `--safe-start` modes passed on GitHub.
+  The exact extracted CI portable also passed both modes locally: windows
+  opened, graceful exit **0**, two available zero-count TCP snapshots per mode,
+  no observed core children, unchanged proxy/URI state. Retained output contained
+  the usual renderer/plugin messages, not an observed crash. These are snapshots,
+  not packet capture or a normal-network behavior test.
 - All **9 Windows tooling scripts** passed syntax validation, and **17 offline
   publication-guard scenarios** passed. Inherited Android tooling is outside this
   validation; its existing syntax problems were not treated as Windows failures.
@@ -219,9 +236,28 @@ their JSON/process-output evidence. No real profile or Proxy/TUN connection is u
   and a full installer/portable build. [Expanded checks](https://github.com/maksoon4k/nn4kvpn/actions/runs/45078475411)
   passed analysis, 316 tests, 17 guards and packaging, but failed startup TCP
   observation. The UI's overlooked online font loader was removed and the same
-  fonts bundled; a fresh complete validation is required before publishing.
+  fonts bundled. [Final Windows Checks](https://github.com/maksoon4k/nn4kvpn/actions/runs/45081917123)
+  passed analysis, **323 tests**, **17 guards**, packaging and both strict UI
+  modes. The earlier failure and limits of its host attribution are retained in
+  the security review; the startup gate was not weakened.
 - Local GitHub authentication and private repository **maksoon4k/nn4kvpn**
-  (repository ID **1468003190**) were verified. Source/release publication and
-  hosted CI results are recorded only after the remote operations finish.
-- End-to-end upgrade and upstream/application licensing: unresolved; see
+  (repository ID **1468003190**) were verified. Stable
+  [v1.4.3](https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.3) is published;
+  tag/latest, all three original asset IDs/sizes/digests and separately downloaded
+  SHA-256 values were verified. Published binaries are the exact CI bytes, not
+  another local rebuild.
+- A limited production-updater replay accepted actual published metadata and
+  separately downloaded installer bytes; newer-only/no-downgrade, final checking,
+  same-size tampering rejection and owned-copy removal passed. Its network was
+  mocked; no application token, installer launch or Proxy/TUN was used.
+- The local `build\windows\x64\runner\Release` is a retained **preliminary cached
+  runtime**, not the published CI runtime. Our earlier installer/ZIP and reports
+  were preserved separately before adopting the verified CI packages into
+  `build\installer`. Do not repack the old runtime as v1.4.3 or replace published
+  binaries; configure afresh and bump the semantic version for the next release.
+- Sanitized durable identities, startup summaries, native imports, hashes and
+  replay results are committed in
+  [windows-release-validation.json](windows-release-validation.json).
+- End-to-end upgrade, clean-machine/Windows N and JNI/JVM functionality remain
+  untested; upstream/application licensing remains unresolved. See
   [security review](SECURITY_AUDIT.md) and [updates](WINDOWS_UPDATES.md).

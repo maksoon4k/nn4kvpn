@@ -1,0 +1,510 @@
+{
+    "CheckedAt":  "2026-11-22T23:53:43.2820852Z",
+    "Version":  "1.4.3+8",
+    "BuildSourceCommit":  "a6f1f80ac088d8d7250e98d8d67b2049553f90e6",
+    "Repository":  {
+                       "full_name":  "maksoon4k/nn4kvpn",
+                       "id":  1468003190,
+                       "private":  true
+                   },
+    "Release":  {
+                    "Id":  454794402,
+                    "Tag":  "v1.4.3",
+                    "Url":  "https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.3",
+                    "PublishedAt":  "2026-11-22T23:48:12Z",
+                    "Draft":  false,
+                    "Prerelease":  false,
+                    "TagCommitVerified":  true,
+                    "LatestVerified":  true,
+                    "AssetSizesAndDigestsVerified":  true,
+                    "SeparatelyDownloadedAssetHashesVerified":  true,
+                    "Artifacts":  [
+                                      {
+                                          "Id":  780857529,
+                                          "Name":  "NN4KSetup-1.4.3.exe",
+                                          "Bytes":  41665634,
+                                          "Sha256":  "45df7bff26e653a2bb066188b12971679fc9bb287327114f49321bb90e7cb2fc"
+                                      },
+                                      {
+                                          "Id":  780858395,
+                                          "Name":  "NN4K-1.4.3-windows-portable.zip",
+                                          "Bytes":  58570060,
+                                          "Sha256":  "15b7057b2e3fbdd0eec16802383a7e827f905f45840d368d783c6c9efa97c8a3"
+                                      },
+                                      {
+                                          "Id":  780859569,
+                                          "Name":  "checksums.txt",
+                                          "Bytes":  186,
+                                          "Sha256":  "510a05f89020ccb348ffba82c0b72441a3180ae43629a1b51749d0969d9dbdb7"
+                                      }
+                                  ]
+                },
+    "ReleaseNotesVerification":  {
+                                    "SourceCommit":  "a6f1f80ac088d8d7250e98d8d67b2049553f90e6",
+                                    "ReleaseId":  454794402,
+                                    "PrerequisitesAndExactCiIdentityAdded":  true,
+                                    "OnlyReleaseBodyEdited":  true,
+                                    "AllOriginalAssetIdsSizesAndDigestsUnchanged":  true,
+                                    "NotesSha256":  "71f8e9ff0b03df4ea7259e6aff9a98f4cbc0a4953ec7f058e6738d4651b7cd90"
+                                },
+    "PublishedBuild":  {
+                           "BuildOrigin":  "GitHub Windows Checks",
+                           "HostedRunId":  45081917123,
+                           "BundleFiles":  315,
+                           "BundleBytes":  154694931,
+                           "PortableZipFilesVerified":  315,
+                           "RunnerSha256":  "3d39b00b3a21e3816ff5b07a4f59ecc88449db20a78af23a8b29acac4d50450c",
+                           "AotSha256":  "f4396446f1539f1f9534905b2b7de0f99af4834b1097da7520733d3eee92ce7f",
+                           "UpdateRepository":  "maksoon4k/nn4kvpn",
+                           "RepositoryFoundInAot":  true,
+                           "BundledInterPinsVerified":  true,
+                           "BundledFontLicenseAndSourceVerified":  true,
+                           "RemovedOnlineFontEndpointFoundInAot":  false,
+                           "UnexpectedExecutablesOrScripts":  false,
+                           "InstallerAuthenticodeStatus":  "NotSigned",
+                           "FlutterTests":  323,
+                           "PublishingGuards":  17,
+                           "AnalyzerErrors":  0,
+                           "AnalyzerWarnings":  0,
+                           "AnalyzerInformationalLints":  15,
+                           "Startup":  [
+                                           {
+                                               "ProfileMode":  "IsolatedMainScreen",
+                                               "StartedAt":  "2026-11-22T23:37:13.7073698Z",
+                                               "ExecutableSha256":  "3d39b00b3a21e3816ff5b07a4f59ecc88449db20a78af23a8b29acac4d50450c",
+                                               "WindowOpened":  true,
+                                               "ExitedGracefully":  true,
+                                               "ForcedTermination":  false,
+                                               "ExitCode":  0,
+                                               "CoreChildrenObserved":  0,
+                                               "TcpConnectionInspectionAvailable":  true,
+                                               "TcpConnectionsObserved":  0,
+                                               "TcpSnapshotsObserved":  [
+                                                                            {
+                                                                                "Phase":  "InputIdle",
+                                                                                "Available":  true,
+                                                                                "Count":  0
+                                                                            },
+                                                                            {
+                                                                                "Phase":  "AfterObservationWindow",
+                                                                                "Available":  true,
+                                                                                "Count":  0
+                                                                            }
+                                                                        ],
+                                               "ProxyUnchanged":  true,
+                                               "UriHandlerUnchanged":  true,
+                                               "Passed":  true
+                                           },
+                                           {
+                                               "ProfileMode":  "FirstRun",
+                                               "StartedAt":  "2026-11-22T23:37:25.5891278Z",
+                                               "ExecutableSha256":  "3d39b00b3a21e3816ff5b07a4f59ecc88449db20a78af23a8b29acac4d50450c",
+                                               "WindowOpened":  true,
+                                               "ExitedGracefully":  true,
+                                               "ForcedTermination":  false,
+                                               "ExitCode":  0,
+                                               "CoreChildrenObserved":  0,
+                                               "TcpConnectionInspectionAvailable":  true,
+                                               "TcpConnectionsObserved":  0,
+                                               "TcpSnapshotsObserved":  [
+                                                                            {
+                                                                                "Phase":  "InputIdle",
+                                                                                "Available":  true,
+                                                                                "Count":  0
+                                                                            },
+                                                                            {
+                                                                                "Phase":  "AfterObservationWindow",
+                                                                                "Available":  true,
+                                                                                "Count":  0
+                                                                            }
+                                                                        ],
+                                               "ProxyUnchanged":  true,
+                                               "UriHandlerUnchanged":  true,
+                                               "Passed":  true
+                                           }
+                                       ]
+                       },
+    "HostedValidation":  {
+                             "RunId":  45081917123,
+                             "RunUrl":  "https://github.com/maksoon4k/nn4kvpn/actions/runs/45081917123",
+                             "SourceCommit":  "a6f1f80ac088d8d7250e98d8d67b2049553f90e6",
+                             "FlutterTests":  323,
+                             "PublishingGuards":  17,
+                             "BothUiModesPassed":  true,
+                             "StartupRunnerMatchesHostedPortable":  true,
+                             "BundleFiles":  315,
+                             "BundleBytes":  154694931,
+                             "RunnerSha256":  "3d39b00b3a21e3816ff5b07a4f59ecc88449db20a78af23a8b29acac4d50450c",
+                             "AotSha256":  "f4396446f1539f1f9534905b2b7de0f99af4834b1097da7520733d3eee92ce7f",
+                             "Artifacts":  [
+                                               {
+                                                   "Name":  "NN4KSetup-1.4.3.exe",
+                                                   "Bytes":  41665634,
+                                                   "Sha256":  "45df7bff26e653a2bb066188b12971679fc9bb287327114f49321bb90e7cb2fc"
+                                               },
+                                               {
+                                                   "Name":  "NN4K-1.4.3-windows-portable.zip",
+                                                   "Bytes":  58570060,
+                                                   "Sha256":  "15b7057b2e3fbdd0eec16802383a7e827f905f45840d368d783c6c9efa97c8a3"
+                                               },
+                                               {
+                                                   "Name":  "checksums.txt",
+                                                   "Bytes":  186,
+                                                   "Sha256":  "510a05f89020ccb348ffba82c0b72441a3180ae43629a1b51749d0969d9dbdb7"
+                                               }
+                                           ],
+                             "ExactInstallerAndPortableBytesPublished":  true,
+                             "Startup":  [
+                                             {
+                                                 "ProfileMode":  "IsolatedMainScreen",
+                                                 "StartedAt":  "2026-11-22T23:21:06.8237765Z",
+                                                 "ExecutableSha256":  "3d39b00b3a21e3816ff5b07a4f59ecc88449db20a78af23a8b29acac4d50450c",
+                                                 "WindowOpened":  true,
+                                                 "ExitedGracefully":  true,
+                                                 "ForcedTermination":  false,
+                                                 "ExitCode":  0,
+                                                 "CoreChildrenObserved":  0,
+                                                 "TcpConnectionInspectionAvailable":  true,
+                                                 "TcpConnectionsObserved":  0,
+                                                 "TcpSnapshotsObserved":  [
+                                                                              {
+                                                                                  "Phase":  "InputIdle",
+                                                                                  "Available":  true,
+                                                                                  "Count":  0
+                                                                              },
+                                                                              {
+                                                                                  "Phase":  "AfterObservationWindow",
+                                                                                  "Available":  true,
+                                                                                  "Count":  0
+                                                                              }
+                                                                          ],
+                                                 "ProxyUnchanged":  true,
+                                                 "UriHandlerUnchanged":  true,
+                                                 "Passed":  true
+                                             },
+                                             {
+                                                 "ProfileMode":  "FirstRun",
+                                                 "StartedAt":  "2026-11-22T23:21:19.0395009Z",
+                                                 "ExecutableSha256":  "3d39b00b3a21e3816ff5b07a4f59ecc88449db20a78af23a8b29acac4d50450c",
+                                                 "WindowOpened":  true,
+                                                 "ExitedGracefully":  true,
+                                                 "ForcedTermination":  false,
+                                                 "ExitCode":  0,
+                                                 "CoreChildrenObserved":  0,
+                                                 "TcpConnectionInspectionAvailable":  true,
+                                                 "TcpConnectionsObserved":  0,
+                                                 "TcpSnapshotsObserved":  [
+                                                                              {
+                                                                                  "Phase":  "InputIdle",
+                                                                                  "Available":  true,
+                                                                                  "Count":  0
+                                                                              },
+                                                                              {
+                                                                                  "Phase":  "AfterObservationWindow",
+                                                                                  "Available":  true,
+                                                                                  "Count":  0
+                                                                              }
+                                                                          ],
+                                                 "ProxyUnchanged":  true,
+                                                 "UriHandlerUnchanged":  true,
+                                                 "Passed":  true
+                                             }
+                                         ]
+                         },
+    "RetainedStartupOutputReview":  {
+                                      "HostedAndExactCiLocalPortableLogsManuallyReviewed":  true,
+                                      "ObservedStdout":  "[video_player_win][native] ~VideoPlayerWinPlugin() called",
+                                      "ObservedStderr":  "[IMPORTANT:flutter/shell/platform/embedder/embedder_surface_gl_impeller.cc(127)] Using the Impeller rendering backend (OpenGLESSDF).",
+                                      "Limit":  "Retained process output from both isolated modes only; not a complete crash, exception or traffic trace."
+                                  },
+    "UpdaterReplay":  {
+                          "CheckedAt":  "2026-11-22T23:53:42.898928Z",
+                          "Repository":  "maksoon4k/nn4kvpn",
+                          "Version":  "1.4.3",
+                          "InstallerAssetId":  780857529,
+                          "InstallerBytes":  41665634,
+                          "InstallerSha256":  "45df7bff26e653a2bb066188b12971679fc9bb287327114f49321bb90e7cb2fc",
+                          "RealPublishedMetadataAccepted":  true,
+                          "RealSeparatelyDownloadedInstallerStreamed":  true,
+                          "NewerOnlyAndNoDowngrade":  true,
+                          "FinalVerificationPassed":  true,
+                          "SameSizeTamperingRejected":  true,
+                          "OwnedStagedCopyRemoved":  true,
+                          "MetadataReplayRequests":  3,
+                          "AssetReplayRequests":  1,
+                          "NetworkMocked":  true,
+                          "ApplicationTokenUsed":  false,
+                          "InstallerLaunched":  false,
+                          "ProxyOrTunUsed":  false,
+                          "Limit":  "Replay of real metadata/downloaded bytes through production updater code; not a live credential/redirect or end-to-end installation test.",
+                          "ProductionUpdaterSourceCommit":  "a6f1f80ac088d8d7250e98d8d67b2049553f90e6",
+                          "OriginalDownloadedInstallerUnchanged":  true
+                      },
+    "InitialEmptyDraftRecovery":  {
+                                      "CheckedAt":  "2026-11-22T23:45:14.1307085Z",
+                                      "DraftId":  454794402,
+                                      "SourceCommit":  "a6f1f80ac088d8d7250e98d8d67b2049553f90e6",
+                                      "TagName":  "v1.4.3",
+                                      "DraftStillEmptyAndUnpublished":  true,
+                                      "ExistingNameAndBodyUnchanged":  true,
+                                      "NoGitTagDeletedOrReplaced":  true,
+                                      "KnownTransitionalTagRestoredOnly":  true,
+                                      "GitHubCliDraftLookup":  {
+                                                                   "databaseId":  454794402,
+                                                                   "isDraft":  true,
+                                                                   "isPrerelease":  false,
+                                                                   "tagName":  "v1.4.3",
+                                                                   "targetCommitish":  "a6f1f80ac088d8d7250e98d8d67b2049553f90e6"
+                                                               }
+                                  },
+    "NativeDependencyInspection":  {
+                                       "CheckedAt":  "2026-11-22T23:34:16.4073700Z",
+                                       "SourceCommit":  "a6f1f80ac088d8d7250e98d8d67b2049553f90e6",
+                                       "HostedRun":  45081917123,
+                                       "NativeImagesReadNotExecuted":  12,
+                                       "Files":  [
+                                                     {
+                                                         "File":  "dartjni.dll",
+                                                         "Bytes":  62464,
+                                                         "Sha256":  "b1798d13830c14a40e83d52b72682b17e966a3d206b09b7535e59b7e5ee0fe27",
+                                                         "Dependencies":  [
+                                                                              "jvm.dll",
+                                                                              "KERNEL32.dll",
+                                                                              "ole32.dll",
+                                                                              "VCRUNTIME140.dll",
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                              "api-ms-win-crt-stdio-l1-1-0.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll"
+                                                                          ]
+                                                     },
+                                                     {
+                                                         "File":  "flutter_windows.dll",
+                                                         "Bytes":  21332480,
+                                                         "Sha256":  "81d227453d4e34da29e399c62d615091ffc712e54fb2ec20010c1c95487e90b6",
+                                                         "Dependencies":  [
+                                                                              "ADVAPI32.dll",
+                                                                              "IPHLPAPI.DLL",
+                                                                              "ole32.dll",
+                                                                              "OLEAUT32.dll",
+                                                                              "PSAPI.DLL",
+                                                                              "SHLWAPI.dll",
+                                                                              "RPCRT4.dll",
+                                                                              "WINMM.dll",
+                                                                              "WS2_32.dll",
+                                                                              "IMM32.dll",
+                                                                              "USER32.dll",
+                                                                              "OPENGL32.dll",
+                                                                              "bcrypt.dll",
+                                                                              "api-ms-win-core-path-l1-1-0.dll",
+                                                                              "ntdll.dll",
+                                                                              "GDI32.dll",
+                                                                              "KERNEL32.dll",
+                                                                              "CRYPT32.dll",
+                                                                              "UIAutomationCore.DLL",
+                                                                              "OLEACC.dll",
+                                                                              "PROPSYS.dll",
+                                                                              "dxgi.dll",
+                                                                              "api-ms-win-core-synch-l1-2-0.dll",
+                                                                              "dwmapi.dll",
+                                                                              "dbghelp.dll"
+                                                                          ]
+                                                     },
+                                                     {
+                                                         "File":  "local_notifier_plugin.dll",
+                                                         "Bytes":  164352,
+                                                         "Sha256":  "3ae8aaaa11ba669f7ba57be35f251d6f61ac3670995dfa60dd2cf0101c3886ee",
+                                                         "Dependencies":  [
+                                                                              "flutter_windows.dll",
+                                                                              "KERNEL32.dll",
+                                                                              "ole32.dll",
+                                                                              "MSVCP140.dll",
+                                                                              "VCRUNTIME140.dll",
+                                                                              "VCRUNTIME140_1.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "api-ms-win-crt-convert-l1-1-0.dll",
+                                                                              "api-ms-win-crt-stdio-l1-1-0.dll",
+                                                                              "api-ms-win-crt-math-l1-1-0.dll",
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll"
+                                                                          ]
+                                                     },
+                                                     {
+                                                         "File":  "nn4k.exe",
+                                                         "Bytes":  88576,
+                                                         "Sha256":  "3d39b00b3a21e3816ff5b07a4f59ecc88449db20a78af23a8b29acac4d50450c",
+                                                         "Dependencies":  [
+                                                                              "dwmapi.dll",
+                                                                              "local_notifier_plugin.dll",
+                                                                              "screen_retriever_windows_plugin.dll",
+                                                                              "tray_manager_plugin.dll",
+                                                                              "video_player_win_plugin.dll",
+                                                                              "window_manager_plugin.dll",
+                                                                              "flutter_windows.dll",
+                                                                              "KERNEL32.dll",
+                                                                              "USER32.dll",
+                                                                              "SHELL32.dll",
+                                                                              "ole32.dll",
+                                                                              "ADVAPI32.dll",
+                                                                              "MSVCP140.dll",
+                                                                              "VCRUNTIME140_1.dll",
+                                                                              "VCRUNTIME140.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "api-ms-win-crt-stdio-l1-1-0.dll",
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                              "api-ms-win-crt-math-l1-1-0.dll",
+                                                                              "api-ms-win-crt-locale-l1-1-0.dll"
+                                                                          ]
+                                                     },
+                                                     {
+                                                         "File":  "screen_retriever_windows_plugin.dll",
+                                                         "Bytes":  119296,
+                                                         "Sha256":  "56e64caa748cfe2e1ef04daaa6a9367cd86f6a32e38be06323d839f637190cdc",
+                                                         "Dependencies":  [
+                                                                              "flutter_windows.dll",
+                                                                              "USER32.dll",
+                                                                              "MSVCP140.dll",
+                                                                              "VCRUNTIME140.dll",
+                                                                              "VCRUNTIME140_1.dll",
+                                                                              "api-ms-win-crt-math-l1-1-0.dll",
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                              "KERNEL32.dll"
+                                                                          ]
+                                                     },
+                                                     {
+                                                         "File":  "tray_manager_plugin.dll",
+                                                         "Bytes":  107520,
+                                                         "Sha256":  "98c7765b440859042d76e061bddb995d76c8f040028aa330d937e3f370c14e55",
+                                                         "Dependencies":  [
+                                                                              "flutter_windows.dll",
+                                                                              "USER32.dll",
+                                                                              "SHELL32.dll",
+                                                                              "MSVCP140.dll",
+                                                                              "VCRUNTIME140.dll",
+                                                                              "VCRUNTIME140_1.dll",
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                              "KERNEL32.dll"
+                                                                          ]
+                                                     },
+                                                     {
+                                                         "File":  "video_player_win_plugin.dll",
+                                                         "Bytes":  175616,
+                                                         "Sha256":  "42eb64c60ec6b5cd0391d48250778e54c3a4be9104fa1b4de1bd1819ec2f3049",
+                                                         "Dependencies":  [
+                                                                              "flutter_windows.dll",
+                                                                              "KERNEL32.dll",
+                                                                              "USER32.dll",
+                                                                              "ole32.dll",
+                                                                              "MSVCP140.dll",
+                                                                              "d3d11.dll",
+                                                                              "MFPlat.DLL",
+                                                                              "WINHTTP.dll",
+                                                                              "VCRUNTIME140.dll",
+                                                                              "VCRUNTIME140_1.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                              "api-ms-win-crt-stdio-l1-1-0.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll"
+                                                                          ]
+                                                     },
+                                                     {
+                                                         "File":  "window_manager_plugin.dll",
+                                                         "Bytes":  128512,
+                                                         "Sha256":  "b92d1f8df6756b31601745131800ceb06df2b4b55e43bf379dca3a3f9565892c",
+                                                         "Dependencies":  [
+                                                                              "flutter_windows.dll",
+                                                                              "KERNEL32.dll",
+                                                                              "USER32.dll",
+                                                                              "SHELL32.dll",
+                                                                              "ole32.dll",
+                                                                              "ADVAPI32.dll",
+                                                                              "MSVCP140.dll",
+                                                                              "dwmapi.dll",
+                                                                              "VCRUNTIME140.dll",
+                                                                              "VCRUNTIME140_1.dll",
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll"
+                                                                          ]
+                                                     },
+                                                     {
+                                                         "File":  "assets/sing-box/sing-box.exe",
+                                                         "Bytes":  82074624,
+                                                         "Sha256":  "8f30682ee198855440d2a7fe070d5d3653793b2d01bb8c85eea88f93bbe7c8b9",
+                                                         "Dependencies":  [
+                                                                              "kernel32.dll"
+                                                                          ]
+                                                     },
+                                                     {
+                                                         "File":  "assets/xray/wintun.dll",
+                                                         "Bytes":  427552,
+                                                         "Sha256":  "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce",
+                                                         "Dependencies":  [
+                                                                              "KERNEL32.dll",
+                                                                              "ntdll.dll",
+                                                                              "CFGMGR32.dll",
+                                                                              "IPHLPAPI.DLL",
+                                                                              "ADVAPI32.dll",
+                                                                              "SETUPAPI.dll",
+                                                                              "api-ms-win-devices-query-l1-1-0.dll",
+                                                                              "ole32.dll",
+                                                                              "api-ms-win-devices-swdevice-l1-1-0.dll",
+                                                                              "VERSION.dll",
+                                                                              "SHLWAPI.dll",
+                                                                              "SHELL32.dll",
+                                                                              "nci.dll"
+                                                                          ]
+                                                     },
+                                                     {
+                                                         "File":  "assets/xray/xray.exe",
+                                                         "Bytes":  34864640,
+                                                         "Sha256":  "1ca7a2cf61ba2c5d20b21a80d405b57933939751081cb289f07bd8ddf7cc3185",
+                                                         "Dependencies":  [
+                                                                              "kernel32.dll"
+                                                                          ]
+                                                     },
+                                                     {
+                                                         "File":  "data/app.so",
+                                                         "Bytes":  7619544,
+                                                         "Sha256":  "f4396446f1539f1f9534905b2b7de0f99af4834b1097da7520733d3eee92ce7f",
+                                                         "Dependencies":  [
+
+                                                                          ]
+                                                     }
+                                                 ],
+                                       "Limit":  "Direct dependency inspection only; no JNI, DLL functionality, live VPN, or clean-machine compatibility test."
+                                   },
+    "BuildComparison":  {
+                            "LocalCachedBuildNotPublished":  true,
+                            "LocalCachedBuildFiles":  316,
+                            "HostedPublishedBuildFiles":  315,
+                            "IdenticalCommonFiles":  303,
+                            "LocalOnlyEmptyNativeAssetsJsonBytes":  45,
+                            "LocalCachedReleaseCxxFlagsEmpty":  true,
+                            "InterTtfCoreExecutableAndFlutterEngineHashesMatched":  true,
+                            "Note":  "The cached local native build differs from fresh CI and is retained only as an external baseline; the exact CI installer and portable bytes passed hosted checks and both local portable modes."
+                        },
+    "EarlierFailedHostedStartup":  {
+                                       "RunId":  45078475411,
+                                       "RunUrl":  "https://github.com/maksoon4k/nn4kvpn/actions/runs/45078475411",
+                                       "TcpEntriesObserved":  6,
+                                       "BoundEntries":  3,
+                                       "EstablishedNonLoopbackPort443Entries":  3,
+                                       "PublicationBlocked":  true,
+                                       "ExactRemoteHostAttributionProven":  false,
+                                       "RemovedUncachedGoogleFontsRequestsReproducedWithMockNetwork":  3
+                                   },
+    "Limits":  [
+                   "Limited source review and advisory scan, not proof of absence of backdoors or publisher trust.",
+                   "TCP observations are snapshots, not packet capture; transient TCP, UDP/DNS and all subprocess behavior are not excluded.",
+                   "Safe-start uses disposable data and suppresses startup actions; it is not a sandbox or certification of normal live privacy behavior.",
+                   "Updater replay uses real metadata/downloaded bytes with a mock client, no application token and no installer launch.",
+                   "No live Proxy/TUN, genuinely newer end-to-end installation, clean-machine Windows N or JNI/JVM test was performed.",
+                   "The installer is unsigned and upstream application redistribution rights remain unresolved; the repository remains private."
+               ]
+}
