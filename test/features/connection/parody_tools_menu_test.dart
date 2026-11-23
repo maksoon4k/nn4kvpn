@@ -2,9 +2,44 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart' show Slider;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flux/app/external_web.dart';
+import 'package:flux/app/safe_app_exit.dart';
 import 'package:flux/features/connection/parody_tools_menu.dart';
+import 'package:flux/features/connection/tools/minecraft_tool.dart';
+import 'package:flux/features/connection/tools/recorder_tool.dart';
+import 'package:flux/features/connection/tools/voxel_renderer.dart';
 import 'package:flux/widgets/port_ui/port_ui.dart';
+
+import '../../support/fake_media_controller.dart';
+
+Future<bool> fixtureBrowser(Uri uri) async => true;
+
+Widget menuHost({ExternalWebOpener openBrowser = fixtureBrowser}) =>
+    ProviderScope(
+      overrides: [
+        safeAppExitProvider.overrideWithValue(
+          SafeAppExit(prepare: () async {}, cancel: () {}, close: () async {}),
+        ),
+      ],
+      child: PortApp(
+        home: Align(
+          alignment: Alignment.bottomRight,
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ParodyToolsMenu(
+              openBrowser: openBrowser,
+              recorderFactory: () => RecorderTool(
+                sourceFactory: MemoryCassetteSource.new,
+                controllerFactory: FixtureMediaController.new,
+                pickFile: () async => null,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
 
 Future<void> tapKey(WidgetTester tester, String key) async {
   final finder = find.byKey(ValueKey(key));
@@ -13,15 +48,12 @@ Future<void> tapKey(WidgetTester tester, String key) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> openTool(WidgetTester tester, String label) async {
-  await tester.pumpWidget(
-    const PortApp(
-      home: Align(
-        alignment: Alignment.bottomRight,
-        child: Padding(padding: EdgeInsets.all(24), child: ParodyToolsMenu()),
-      ),
-    ),
-  );
+Future<void> openTool(
+  WidgetTester tester,
+  String label, {
+  ExternalWebOpener openBrowser = fixtureBrowser,
+}) async {
+  await tester.pumpWidget(menuHost(openBrowser: openBrowser));
   final trigger = tester.getRect(
     find.byKey(const ValueKey('parody-menu-toggle')),
   );
@@ -53,6 +85,7 @@ void main() {
     'Калькулятор',
     'Minecraft',
     'Ютуб',
+    'Сапёр',
   ]) {
     testWidgets('popup physically clicks $label outside the trigger bounds', (
       tester,
@@ -63,11 +96,7 @@ void main() {
   }
 
   testWidgets('outside click and Escape dismiss the popup', (tester) async {
-    await tester.pumpWidget(
-      const PortApp(
-        home: Align(alignment: Alignment.bottomRight, child: ParodyToolsMenu()),
-      ),
-    );
+    await tester.pumpWidget(menuHost());
     await tapKey(tester, 'parody-menu-toggle');
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
@@ -81,11 +110,7 @@ void main() {
   testWidgets('menu rows can be reached by keyboard and activated with Enter', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      const PortApp(
-        home: Align(alignment: Alignment.bottomRight, child: ParodyToolsMenu()),
-      ),
-    );
+    await tester.pumpWidget(menuHost());
     await tapKey(tester, 'parody-menu-toggle');
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
@@ -104,10 +129,11 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
       for (final tool in [
         ('Фонарик', 'flashlight-color', 'Неоновый луч'),
-        ('Магнитофон', 'recorder-record', 'Стоп'),
+        ('Магнитофон', 'recorder-play', 'Пауза'),
         ('DOOM', 'doom-fire', 'В туннеле замечено демонов: 5'),
         ('Калькулятор', 'calculator-key-7', '77'),
-        ('Minecraft', 'minecraft-place', 'Блоков в мире: 1/24 · Трава'),
+        ('Minecraft', 'minecraft-day-night', 'Сделать день'),
+        ('Сапёр', 'minesweeper-flags', 'Режим: флаги'),
       ]) {
         await openTool(tester, tool.$1);
         await tapKey(tester, tool.$2);
@@ -118,19 +144,20 @@ void main() {
         expect(tester.takeException(), isNull);
       }
       await openTool(tester, 'Ютуб');
-      await tapKey(tester, 'youtube-like');
-      expect(find.text('Нравится ♥'), findsOneWidget);
+      await tapKey(tester, 'youtube-home');
+      expect(find.text('YouTube открыт в браузере.'), findsOneWidget);
       await closeTool(tester);
     },
   );
 
   for (final tool in [
-    ('Магнитофон', 'recorder-record'),
-    ('Ютуб', 'youtube-play-pause'),
+    ('Магнитофон', 'recorder-play'),
+    ('Ютуб', 'youtube-home'),
+    ('Сапёр', 'minesweeper-cell-0'),
   ]) {
     for (final escape in [true, false]) {
       testWidgets(
-        '${tool.$1} disposes its active timer on ${escape ? 'Escape' : 'outside click'}',
+        '${tool.$1} closes active work on ${escape ? 'Escape' : 'outside click'}',
         (tester) async {
           await openTool(tester, tool.$1);
           await tapKey(tester, tool.$2);
@@ -172,25 +199,6 @@ void main() {
     expect(tester.widget<Slider>(slider).value, lessThan(10000));
     await closeTool(tester);
   });
-
-  testWidgets(
-    'recorder cassette, elapsed time and rewind controls work without a microphone',
-    (tester) async {
-      await openTool(tester, 'Магнитофон');
-      await tapKey(tester, 'recorder-record');
-      await tester.pump(const Duration(seconds: 2));
-      expect(find.text('00:02'), findsOneWidget);
-      await tapKey(tester, 'recorder-tape');
-      expect(find.text('Кассета: Шум шифрования'), findsOneWidget);
-      await tapKey(tester, 'recorder-rewind');
-      expect(find.text('00:00'), findsOneWidget);
-      await tester.pump(const Duration(seconds: 2));
-      expect(find.text('00:00'), findsOneWidget);
-      await closeTool(tester);
-      await tester.pump(const Duration(seconds: 2));
-      expect(tester.takeException(), isNull);
-    },
-  );
 
   testWidgets('DOOM has shots, medkits, score and successive waves', (
     tester,
@@ -244,45 +252,45 @@ void main() {
   );
 
   testWidgets(
-    'Minecraft places/removes material blocks and changes day/night',
+    'Minecraft menu opens a perspective 3D world rather than the old 2D grid',
     (tester) async {
       await openTool(tester, 'Minecraft');
-      await tapKey(tester, 'minecraft-place');
-      expect(find.text('Блоков в мире: 1/24 · Трава'), findsOneWidget);
+      expect(find.byType(MinecraftTool), findsOneWidget);
+      final painter =
+          tester
+                  .widget<CustomPaint>(
+                    find.byKey(const ValueKey('minecraft-3d-render')),
+                  )
+                  .painter!
+              as VoxelWorldPainter;
+      expect(painter.world.blockCount, greaterThan(1000));
+      expect(find.byKey(const ValueKey('minecraft-cell-0')), findsNothing);
       await tapKey(tester, 'minecraft-material');
-      await tapKey(tester, 'minecraft-cell-0');
-      expect(find.text('Блоков в мире: 2/24 · Камень'), findsOneWidget);
-      await tapKey(tester, 'minecraft-cell-0');
-      expect(find.text('Блоков в мире: 1/24 · Камень'), findsOneWidget);
+      expect(find.textContaining('· Камень ·'), findsOneWidget);
       await tapKey(tester, 'minecraft-day-night');
       expect(find.text('Сделать день'), findsOneWidget);
       await tapKey(tester, 'minecraft-clear');
-      expect(find.text('Блоков в мире: 0/24 · Камень'), findsOneWidget);
+      expect(find.textContaining('· Камень ·'), findsOneWidget);
       await closeTool(tester);
     },
   );
 
   testWidgets(
-    'offline video parody plays/pauses, seeks, changes clips and likes',
+    'YouTube selection opens the actual website once through an injected opener',
     (tester) async {
-      await openTool(tester, 'Ютуб');
-      await tapKey(tester, 'youtube-play-pause');
-      await tester.pump(const Duration(seconds: 2));
-      final slider = find.byKey(const ValueKey('youtube-seek'));
-      expect(tester.widget<Slider>(slider).value, 2);
-      await tapKey(tester, 'youtube-play-pause');
-      await tester.pump(const Duration(seconds: 2));
-      expect(tester.widget<Slider>(slider).value, 2);
-      await tapKey(tester, 'youtube-like');
-      expect(find.text('Нравится ♥'), findsOneWidget);
-      await tapKey(tester, 'youtube-next');
-      expect(find.textContaining('Сейчас играет: 10 часов'), findsOneWidget);
-      await tapKey(tester, 'youtube-clip-2');
-      expect(find.textContaining('Сейчас играет: Кот'), findsOneWidget);
-      await tester.ensureVisible(slider);
-      await tester.drag(slider, const Offset(80, 0));
-      await tester.pumpAndSettle();
-      expect(tester.widget<Slider>(slider).value, greaterThan(0));
+      final addresses = <Uri>[];
+      await openTool(
+        tester,
+        'Ютуб',
+        openBrowser: (uri) async {
+          addresses.add(uri);
+          return true;
+        },
+      );
+      expect(addresses, [Uri.https('www.youtube.com', '/')]);
+      expect(find.byKey(const ValueKey('youtube-clip-0')), findsNothing);
+      await tapKey(tester, 'youtube-home');
+      expect(addresses.length, 2);
       await closeTool(tester);
       await tester.pump(const Duration(seconds: 2));
       expect(tester.takeException(), isNull);

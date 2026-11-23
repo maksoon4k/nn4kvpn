@@ -75,9 +75,15 @@ class ConnectionController extends Notifier<ConnectionUiState> {
     // не подхватилась бы иначе. `forceReconnect: true` в обход no-op-проверки
     // ниже — тут сервер/вариант/режим не меняются, только правила.
     ref.listen(appSettingsProvider, (previous, next) {
-      if (previous?.activeRoutingPresetId == next.activeRoutingPresetId) return;
       final current = state;
       if (current is! ConnectionConnected) return;
+      final presetChanged =
+          previous?.activeRoutingPresetId != next.activeRoutingPresetId;
+      final applicationChanged =
+          Platform.isWindows &&
+          current.mode == ConnectionMode.tun &&
+          previous?.tunApplicationRouting != next.tunApplicationRouting;
+      if (!presetChanged && !applicationChanged) return;
       ServerLeaf? leaf;
       for (final candidate in flattenAllLeaves(ref.read(coreConfigProvider))) {
         if (candidate.id == current.leafId) {
@@ -232,6 +238,18 @@ class ConnectionController extends Notifier<ConnectionUiState> {
     } finally {
       if (identical(_pendingStart, start)) _pendingStart = null;
     }
+    // A persisted edit can arrive after this start captured its settings.
+    // Reconcile only the latest successful Windows TUN start, never a cancelled
+    // start or an updater shutdown, and reuse the serialized reconnect path.
+    if (generation == _generation &&
+        !_shuttingDown &&
+        Platform.isWindows &&
+        mode == ConnectionMode.tun &&
+        state is ConnectionConnected &&
+        settings.tunApplicationRouting !=
+            ref.read(appSettingsProvider).tunApplicationRouting) {
+      unawaited(connectToServer(leaf, mode: mode, forceReconnect: true));
+    }
   }
 
   Future<void> disconnect() async {
@@ -336,6 +354,7 @@ CoreEngine _createPlatformConnectionEngine(
         singBoxExecutablePath: defaultSingBoxExecutablePath(),
         upstreamDns: settings.tunDnsServer,
         upstreamDnsSecondary: settings.tunDnsSecondaryServer,
+        applicationRouting: settings.tunApplicationRouting,
         logLevel: settings.coreLogLevel,
       ),
     },

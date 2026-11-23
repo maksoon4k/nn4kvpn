@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../core_abstraction/app_settings.dart';
 import '../../core_abstraction/core_config.dart';
 import '../../core_abstraction/core_engine.dart';
+import '../../core_abstraction/tun_application_routing.dart';
 import '../../l10n/strings.dart';
 import '../xray/windows_elevation.dart';
 import '../xray/xray_engine_windows.dart';
@@ -33,6 +34,7 @@ class TunBridgeEngine implements CoreEngine {
     this.upstreamDns = defaultTunDnsServer,
     this.upstreamDnsSecondary = '',
     this.logLevel = CoreLogLevel.warn,
+    this.applicationRouting = const TunApplicationRouting(),
   });
 
   @override
@@ -48,6 +50,7 @@ class TunBridgeEngine implements CoreEngine {
   final String upstreamDns;
   final String upstreamDnsSecondary;
   final CoreLogLevel logLevel;
+  final TunApplicationRouting applicationRouting;
 
   late final XrayEngineWindows _xray = XrayEngineWindows(
     id: '${id}_xray',
@@ -81,6 +84,7 @@ class TunBridgeEngine implements CoreEngine {
     String defaultOutboundTag = 'proxy',
     String routingLabel = 'server-routing',
   }) async {
+    applicationRouting.requireValid();
     _statusController.add(EngineStatus.starting);
 
     if (!isRunningElevated()) {
@@ -118,6 +122,7 @@ class TunBridgeEngine implements CoreEngine {
     await _xray.start(
       config,
       manageSystemProxy: false,
+      applyRoutingRules: !applicationRouting.enabled,
       routingLabel: routingLabel,
     );
 
@@ -134,6 +139,7 @@ class TunBridgeEngine implements CoreEngine {
       routingRules: _xray.activeRoutingRules,
       defaultOutboundTag: defaultOutboundTag,
       routingLabel: routingLabel,
+      applicationRouting: applicationRouting,
     );
 
     _statusController.add(EngineStatus.connected);

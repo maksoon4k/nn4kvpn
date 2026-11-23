@@ -28,8 +28,10 @@ import '../servers/routing_preset_exchange.dart';
 import '../servers/routing_rules_dialog.dart';
 import '../updates/update_section.dart';
 import 'about_info.dart';
+import 'background_selection.dart';
 import 'custom_video_storage.dart';
 import 'custom_image_storage.dart';
+import 'tun_application_routing_section.dart';
 
 const _uuid = Uuid();
 
@@ -107,6 +109,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   bool _updatingGeoAssets = false;
   bool _importingVideo = false;
   bool _importingImage = false;
+  int _backgroundEditGeneration = 0;
 
   @override
   void initState() {
@@ -309,6 +312,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               initialValue: settings.homeBackground,
               onChanged: (value) {
                 if (value != null) {
+                  _backgroundEditGeneration++;
                   notifier.update((s) => s.copyWith(homeBackground: value));
                 }
               },
@@ -542,6 +546,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             S.proxyDnsNote,
             style: PortText.small.copyWith(color: PortColors.mutedForeground),
           ),
+          if (Platform.isWindows) ...[
+            const SizedBox(height: 24),
+            const TunApplicationRoutingSection(),
+          ],
         ],
       ),
       _SettingsSection.subscription => PortSwitch(
@@ -819,18 +827,24 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     BuildContext context,
     AppSettingsController notifier,
   ) async {
-    final pickedFile = await FilePicker.pickFile(type: FileType.video);
-    final pickedPath = pickedFile?.path;
-    if (pickedPath == null) return;
-
+    final generation = ++_backgroundEditGeneration;
     setState(() => _importingVideo = true);
     try {
-      final storedPath = await importCustomVideo(pickedPath);
-      notifier.update(
-        (s) => s.copyWith(
-          homeBackground: HomeBackground.customVideo,
-          customVideoPath: storedPath,
-        ),
+      final pickedFile = await FilePicker.pickFile(type: FileType.video);
+      final pickedPath = pickedFile?.path;
+      if (pickedPath == null ||
+          !mounted ||
+          generation != _backgroundEditGeneration) {
+        return;
+      }
+      await replaceCustomBackground(
+        kind: HomeBackground.customVideo,
+        sourcePath: pickedPath,
+        import: importCustomVideo,
+        delete: deleteCustomVideo,
+        readSettings: () => ref.read(appSettingsProvider),
+        updateSettings: notifier.update,
+        canCommit: () => mounted && generation == _backgroundEditGeneration,
       );
     } catch (e) {
       if (!context.mounted) return;
@@ -846,31 +860,43 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     AppSettings settings,
     AppSettingsController notifier,
   ) async {
-    final path = settings.customVideoPath;
-    if (path != null) await deleteCustomVideo(path);
-    notifier.update(
-      (s) => s.copyWith(
-        homeBackground: HomeBackground.none,
-        clearCustomVideoPath: true,
-      ),
-    );
+    _backgroundEditGeneration++;
+    try {
+      await clearCustomBackground(
+        kind: HomeBackground.customVideo,
+        updateSettings: notifier.update,
+        delete: deleteCustomVideo,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      PortToaster.of(
+        context,
+      ).show(PortToast(title: Text(S.videoImportFailure(e))));
+    }
   }
 
   Future<void> _pickImageFile(
     BuildContext context,
     AppSettingsController notifier,
   ) async {
-    final pickedFile = await FilePicker.pickFile(type: FileType.image);
-    final pickedPath = pickedFile?.path;
-    if (pickedPath == null) return;
+    final generation = ++_backgroundEditGeneration;
     setState(() => _importingImage = true);
     try {
-      final storedPath = await importCustomImage(pickedPath);
-      notifier.update(
-        (s) => s.copyWith(
-          homeBackground: HomeBackground.customImage,
-          customImagePath: storedPath,
-        ),
+      final pickedFile = await FilePicker.pickFile(type: FileType.image);
+      final pickedPath = pickedFile?.path;
+      if (pickedPath == null ||
+          !mounted ||
+          generation != _backgroundEditGeneration) {
+        return;
+      }
+      await replaceCustomBackground(
+        kind: HomeBackground.customImage,
+        sourcePath: pickedPath,
+        import: importCustomImage,
+        delete: deleteCustomImage,
+        readSettings: () => ref.read(appSettingsProvider),
+        updateSettings: notifier.update,
+        canCommit: () => mounted && generation == _backgroundEditGeneration,
       );
     } catch (e) {
       if (!context.mounted) return;
@@ -886,14 +912,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     AppSettings settings,
     AppSettingsController notifier,
   ) async {
-    final path = settings.customImagePath;
-    if (path != null) await deleteCustomImage(path);
-    notifier.update(
-      (s) => s.copyWith(
-        homeBackground: HomeBackground.none,
-        clearCustomImagePath: true,
-      ),
-    );
+    _backgroundEditGeneration++;
+    try {
+      await clearCustomBackground(
+        kind: HomeBackground.customImage,
+        updateSettings: notifier.update,
+        delete: deleteCustomImage,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      PortToaster.of(
+        context,
+      ).show(PortToast(title: Text('Не удалось сохранить фон: $e')));
+    }
   }
 
   String _themeModeLabel(AppThemeMode mode) => switch (mode) {

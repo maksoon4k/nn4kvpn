@@ -56,16 +56,21 @@ class _ServerRowState extends State<ServerRow> {
         ? PortColors.accent.withValues(alpha: 0.5)
         : const Color(0x00000000);
 
-    final onHide = widget.onHide;
-    if (onHide == null) return _buildRow(background);
-
     final items = [
-      PortContextMenuItem(
-        leading: const Icon(LucideIcons.eyeOff, size: 14),
-        onPressed: onHide,
-        child: Text(S.hide),
-      ),
+      if (widget.onPing != null)
+        PortContextMenuItem(
+          leading: const Icon(LucideIcons.activity, size: 14),
+          onPressed: widget.pinging ? null : widget.onPing,
+          child: Text(widget.pinging ? 'Проверяется…' : 'Пинг сервера'),
+        ),
+      if (widget.onHide != null)
+        PortContextMenuItem(
+          leading: const Icon(LucideIcons.eyeOff, size: 14),
+          onPressed: widget.onHide,
+          child: Text(S.hide),
+        ),
     ];
+    if (items.isEmpty) return _buildRow(background);
 
     // На Android/iOS правого клика нет, а вешать открытие меню на long
     // press нельзя — строка уже перетаскивается по long press (см. doc
@@ -73,7 +78,10 @@ class _ServerRowState extends State<ServerRow> {
     // иначе перекрывало бы индикатор пинга/шеврон, которые уже занимают
     // правый край.
     if (Platform.isAndroid || Platform.isIOS) {
-      return _buildRow(background, trailing: PortContextMenuButton(items: items));
+      return _buildRow(
+        background,
+        trailing: PortContextMenuButton(items: items),
+      );
     }
 
     return PortContextMenuRegion(items: items, child: _buildRow(background));
@@ -203,10 +211,7 @@ class _PingIndicator extends StatelessWidget {
     if (pinging) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Text(
-          '…',
-          style: PortText.muted.copyWith(fontSize: 11),
-        ),
+        child: Text('…', style: PortText.muted.copyWith(fontSize: 11)),
       );
     }
 
@@ -284,11 +289,7 @@ class _VariantRowState extends State<VariantRow> {
                 ),
               ),
               if (widget.active)
-                Icon(
-                  LucideIcons.check,
-                  size: 13,
-                  color: PortColors.primary,
-                ),
+                Icon(LucideIcons.check, size: 13, color: PortColors.primary),
             ],
           ),
         ),

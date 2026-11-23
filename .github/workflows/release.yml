@@ -79,6 +79,9 @@ jobs:
       - name: Offline DNS configuration schemas (no engine startup)
         shell: pwsh
         run: ./scripts/check_dns_configs.ps1 -Directory "$env:RUNNER_TEMP\nn4k-dns-schema"
+      - name: Offline application-routing schemas (no engine startup or process snapshot)
+        shell: pwsh
+        run: ./scripts/check_application_routing_configs.ps1 -Directory "$env:RUNNER_TEMP\nn4k-application-schema"
       - name: Isolated safe-start UI checks (no live Proxy/TUN)
         shell: pwsh
         run: |
@@ -93,6 +96,8 @@ jobs:
             ${{ runner.temp }}/nn4k-smoke/**/report.json
             ${{ runner.temp }}/nn4k-smoke/**/stdout.log
             ${{ runner.temp }}/nn4k-smoke/**/stderr.log
+            ${{ runner.temp }}/nn4k-application-schema/**/report.json
+            ${{ runner.temp }}/nn4k-application-schema/**/*-error.log
           if-no-files-found: warn
           retention-days: 14
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

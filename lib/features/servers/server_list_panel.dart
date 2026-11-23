@@ -79,9 +79,9 @@ class ServerListContent extends ConsumerWidget {
     void reconnectToLeafIfActive(String leafId) {
       final connectionState = ref.read(connectionControllerProvider);
       if (connectionState is! ConnectionConnected) return;
-      final updatedLeaf = flattenAllLeaves(ref.read(coreConfigProvider))
-          .where((l) => l.id == leafId)
-          .firstOrNull;
+      final updatedLeaf = flattenAllLeaves(
+        ref.read(coreConfigProvider),
+      ).where((l) => l.id == leafId).firstOrNull;
       if (updatedLeaf != null) {
         ref
             .read(connectionControllerProvider.notifier)
@@ -159,7 +159,19 @@ class ServerListContent extends ConsumerWidget {
       pingAllLeaves(ref, allLeaves);
     }
 
-    void onReorder(String draggedId, String targetParentGroupId, int targetIndex) {
+    void onPingGroup(List<ServerLeaf> leaves) {
+      if (isTunActive(ref)) {
+        showTunPingBlockedToast();
+        return;
+      }
+      pingAllLeaves(ref, leaves);
+    }
+
+    void onReorder(
+      String draggedId,
+      String targetParentGroupId,
+      int targetIndex,
+    ) {
       ref
           .read(coreConfigProvider.notifier)
           .moveNode(draggedId, targetParentGroupId, targetIndex);
@@ -191,6 +203,7 @@ class ServerListContent extends ConsumerWidget {
                 Expanded(child: Text(S.servers, style: PortText.h4)),
                 if (allLeaves.isNotEmpty)
                   PortIconButton.ghost(
+                    key: const ValueKey('ping-all-servers'),
                     icon: const Icon(LucideIcons.activity, size: 16),
                     onPressed: pingingLeafIds.isEmpty ? onPingAll : null,
                   ),
@@ -205,10 +218,7 @@ class ServerListContent extends ConsumerWidget {
             child: allLeaves.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 14),
-                    child: Text(
-                      S.noServersYet,
-                      style: PortText.muted,
-                    ),
+                    child: Text(S.noServersYet, style: PortText.muted),
                   )
                 : ListView(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -220,6 +230,7 @@ class ServerListContent extends ConsumerWidget {
                           onSelectLeaf: onSelectLeaf,
                           onSelectVariant: onSelectVariant,
                           onPingLeaf: onPingLeaf,
+                          onPingGroup: onPingGroup,
                           latencyForLeaf: (id) => pingCache[id]?.latencyMs,
                           pingingLeafIds: pingingLeafIds,
                           parentGroupId: standaloneParentId,
@@ -229,6 +240,12 @@ class ServerListContent extends ConsumerWidget {
                         _SubscriptionHeader(
                           title: subscription.name,
                           onTap: () => onOpenSubscriptionInfo(subscription.id),
+                          onPing: () =>
+                              onPingGroup(flattenLeaves([subscription.root])),
+                          pinging: flattenLeaves([
+                            subscription.root,
+                          ]).any((leaf) => pingingLeafIds.contains(leaf.id)),
+                          subscriptionId: subscription.id,
                         ),
                         ProxyTreeList(
                           nodes: filterHiddenList(switch (subscription.root) {
@@ -240,6 +257,7 @@ class ServerListContent extends ConsumerWidget {
                           onSelectVariant: onSelectVariant,
                           onHideLeaf: onHideLeaf,
                           onPingLeaf: onPingLeaf,
+                          onPingGroup: onPingGroup,
                           latencyForLeaf: (id) => pingCache[id]?.latencyMs,
                           pingingLeafIds: pingingLeafIds,
                           parentGroupId: subscription.root.id,
@@ -259,10 +277,16 @@ class ServerListContent extends ConsumerWidget {
 class _SubscriptionHeader extends StatefulWidget {
   final String title;
   final VoidCallback onTap;
+  final VoidCallback onPing;
+  final bool pinging;
+  final String subscriptionId;
 
   const _SubscriptionHeader({
     required this.title,
     required this.onTap,
+    required this.onPing,
+    required this.pinging,
+    required this.subscriptionId,
   });
 
   @override
@@ -301,6 +325,15 @@ class _SubscriptionHeaderState extends State<_SubscriptionHeader> {
                     color: highlighted ? PortColors.foreground : null,
                   ),
                 ),
+              ),
+              PortIconButton.ghost(
+                key: ValueKey('ping-subscription-${widget.subscriptionId}'),
+                size: 26,
+                icon: Icon(
+                  widget.pinging ? LucideIcons.hourglass : LucideIcons.activity,
+                  size: 14,
+                ),
+                onPressed: widget.pinging ? null : widget.onPing,
               ),
               Icon(
                 LucideIcons.info,

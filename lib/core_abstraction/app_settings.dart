@@ -1,6 +1,7 @@
 import 'connection_session.dart';
 import 'dns_resolver.dart';
 import 'home_tile_config.dart';
+import 'tun_application_routing.dart';
 
 /// Тема оформления — `system` следует настройке ОС, см. [AppSettings].
 enum AppThemeMode { system, light, dark }
@@ -128,6 +129,7 @@ class AppSettings {
   final bool showNotifications;
 
   final TunCoreType tunCoreType;
+  final TunApplicationRouting tunApplicationRouting;
 
   /// Апстрим-резолвер TUN-режима. В Proxy-режиме не используется намеренно:
   /// там xray домены вообще не резолвит, а отдаёт их серверу, который и
@@ -204,6 +206,7 @@ class AppSettings {
     this.autoConnectMode = ConnectionMode.proxy,
     this.showNotifications = true,
     this.tunCoreType = TunCoreType.singBox,
+    this.tunApplicationRouting = const TunApplicationRouting(),
     this.tunDnsServer = defaultTunDnsServer,
     this.tunDnsSecondaryServer = '',
     this.coreLogLevel = CoreLogLevel.warn,
@@ -272,6 +275,9 @@ class AppSettings {
       TunCoreType.singBox,
     ),
     tunDnsServer: json['tunDnsServer'] as String? ?? defaultTunDnsServer,
+    tunApplicationRouting: TunApplicationRouting.restore(
+      json['tunApplicationRouting'],
+    ),
     tunDnsSecondaryServer: _restoredDnsBackup(json),
     coreLogLevel: _enumFromJson(
       CoreLogLevel.values,
@@ -318,6 +324,7 @@ class AppSettings {
     'autoConnectMode': autoConnectMode.name,
     'showNotifications': showNotifications,
     'tunCoreType': tunCoreType.name,
+    'tunApplicationRouting': tunApplicationRouting.toJson(),
     'tunDnsServer': tunDnsServer,
     if (tunDnsSecondaryServer.isNotEmpty)
       'tunDnsSecondaryServer': tunDnsSecondaryServer,
@@ -352,6 +359,7 @@ class AppSettings {
     ConnectionMode? autoConnectMode,
     bool? showNotifications,
     TunCoreType? tunCoreType,
+    TunApplicationRouting? tunApplicationRouting,
     String? tunDnsServer,
     String? tunDnsSecondaryServer,
     CoreLogLevel? coreLogLevel,
@@ -391,6 +399,8 @@ class AppSettings {
       autoConnectMode: autoConnectMode ?? this.autoConnectMode,
       showNotifications: showNotifications ?? this.showNotifications,
       tunCoreType: tunCoreType ?? this.tunCoreType,
+      tunApplicationRouting:
+          tunApplicationRouting ?? this.tunApplicationRouting,
       tunDnsServer: tunDnsServer ?? this.tunDnsServer,
       tunDnsSecondaryServer:
           tunDnsSecondaryServer ??

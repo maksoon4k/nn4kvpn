@@ -40,7 +40,11 @@ code is not covered by the Windows release or the current audit.
   standalone servers together, so sharing/backing up your whole setup — not
   just one link — is a single file. See `docs/` for the format.
 - **Auto-pick-best-server.** Ping every server (through the proxy, raw TCP,
-  or ICMP) and let Flux pick the lowest-latency one instead of guessing.
+  or ICMP) and let Flux pick the lowest-latency one instead of guessing. Ping a
+  single server from its context menu or a whole folder from its header button.
+- **Per-application TUN routing.** Send apps direct, through the proxy or block
+  them entirely, with whitelist/blacklist defaults, a running-process picker,
+  manual executable paths and a JSON editor. Rules persist across restarts.
 - **In-app Windows updates.** Check, download and install from this fork's
   public releases without an account, repository setup or token. The publisher
   is pinned at build time. Automatic installation is opt-in and waits until VPN
@@ -48,9 +52,11 @@ code is not covered by the Windows release or the current audit.
 - **DNS diagnostics under Ping.** After confirmation, sequentially test seven
   public resolver pairs, choose a reliable encrypted primary/backup and save it
   for later starts. [Selection and privacy details](docs/DNS_DIAGNOSTICS.md).
-- **Six repaired playful tools.** Clickable and keyboard-accessible flashlight,
-  recorder, DOOM, calculator, Minecraft and offline video parodies. All controls
-  use local UI state only; no microphone, game process or online player.
+- **Seven built-in tools.** Flashlight, a working cassette recorder, DOOM,
+  calculator, a bounded 3D voxel sandbox, the real YouTube site in your system
+  browser, and Minesweeper with a safe exit. They use local UI state (plus an
+  HTTPS browser hand-off for YouTube); no microphone recording, bundled game
+  engine or download is involved.
 
 ## Other features
 

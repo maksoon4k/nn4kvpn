@@ -1,22 +1,36 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart' show Colors, Icons, Material, Slider;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/external_web.dart';
+import '../../app/safe_app_exit.dart';
 import '../../widgets/port_ui/port_ui.dart';
+import 'tools/minecraft_tool.dart';
+import 'tools/minesweeper_tool.dart';
+import 'tools/recorder_tool.dart';
+import 'tools/youtube_tool.dart';
 
 /// A deliberately small set of "totally essential" VPN utilities.
-/// Everything is local UI state: no permissions, media devices or web views.
-class ParodyToolsMenu extends StatefulWidget {
-  const ParodyToolsMenu({super.key});
+/// Games are local; YouTube opens the actual site and the cassette uses the
+/// existing system media decoder. Test seams never open a browser/play sound.
+class ParodyToolsMenu extends ConsumerStatefulWidget {
+  final ExternalWebOpener openBrowser;
+  final RecorderTool Function()? recorderFactory;
+
+  const ParodyToolsMenu({
+    super.key,
+    this.openBrowser = openExternalWeb,
+    this.recorderFactory,
+  });
 
   @override
-  State<ParodyToolsMenu> createState() => _ParodyToolsMenuState();
+  ConsumerState<ParodyToolsMenu> createState() => _ParodyToolsMenuState();
 }
 
-class _ParodyToolsMenuState extends State<ParodyToolsMenu> {
+class _ParodyToolsMenuState extends ConsumerState<ParodyToolsMenu> {
   final _overlay = OverlayPortalController();
   final _link = LayerLink();
 
@@ -25,7 +39,12 @@ class _ParodyToolsMenuState extends State<ParodyToolsMenu> {
     if (mounted) setState(() {});
   }
 
-  void _show(String title, Widget body) {
+  void _show(
+    String title,
+    Widget body, {
+    double maxWidth = 420,
+    String? description,
+  }) {
     _closeMenu();
     showPortDialog<void>(
       context: context,
@@ -37,9 +56,10 @@ class _ParodyToolsMenuState extends State<ParodyToolsMenu> {
         child: Focus(
           autofocus: true,
           child: PortDialog(
+            maxWidth: maxWidth,
             title: Text(title),
-            description: const Text(
-              'Пасхалка NN4K. Никаких лишних процессов — только вайб.',
+            description: Text(
+              description ?? 'Пасхалка NN4K. Локальная мини-утилита.',
             ),
             actions: [
               PortButton.outline(
@@ -70,7 +90,11 @@ class _ParodyToolsMenuState extends State<ParodyToolsMenu> {
       _ToolEntry(
         'Магнитофон',
         Icons.radio,
-        () => _show('Магнитофон', const _Recorder()),
+        () => _show(
+          'Магнитофон',
+          widget.recorderFactory?.call() ?? const RecorderTool(),
+          description: 'Настоящий звук без микрофона и скачивания музыки.',
+        ),
       ),
       _ToolEntry(
         'DOOM',
@@ -85,13 +109,33 @@ class _ParodyToolsMenuState extends State<ParodyToolsMenu> {
       _ToolEntry(
         'Minecraft',
         Icons.terrain,
-        () => _show('Minecraft Lite', const _Minecraft()),
+        () => _show(
+          'Minecraft Lite · 3D',
+          const MinecraftTool(),
+          maxWidth: 820,
+          description:
+              'Лёгкая самостоятельная 3D-песочница без тяжёлого игрового движка.',
+        ),
       ),
       _ToolEntry(
         'Ютуб',
         Icons.play_circle_fill,
-        () => _show('Ютуб без рекламы (почти)', const _Youtube()),
+        () => _show(
+          'YouTube',
+          YoutubeTool(openBrowser: widget.openBrowser),
+          description: 'Настоящий сайт открывается в вашем браузере.',
+        ),
       ),
+      _ToolEntry('Сапёр', Icons.grid_on, () {
+        final exit = ref.read(safeAppExitProvider);
+        _show(
+          'Сапёр',
+          MinesweeperTool(onLoss: exit.exit),
+          maxWidth: 480,
+          description:
+              'Первый ход безопасен. Проигрыш может закрыть NN4K — см. переключатель ниже.',
+        );
+      }),
     ];
 
     // An overflowing Stack can paint outside a 40px trigger, but Flutter will
@@ -384,111 +428,6 @@ class _BeamClipper extends CustomClipper<Path> {
   bool shouldReclip(_BeamClipper old) => old.openness != openness;
 }
 
-class _Recorder extends StatefulWidget {
-  const _Recorder();
-  @override
-  State<_Recorder> createState() => _RecorderState();
-}
-
-class _RecorderState extends State<_Recorder> {
-  bool _recording = false;
-  int _seconds = 0;
-  Timer? _timer;
-  int _tape = 0;
-  static const _tapes = ['Ночной маршрут', 'Шум шифрования', 'Лоу-фай пакеты'];
-  void _toggle() {
-    setState(() => _recording = !_recording);
-    _timer?.cancel();
-    if (_recording) {
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (mounted) setState(() => _seconds++);
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Container(
-        height: 82,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: PortColors.secondary,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Text(
-          '${(_seconds ~/ 60).toString().padLeft(2, '0')}:${(_seconds % 60).toString().padLeft(2, '0')}',
-          style: const TextStyle(fontSize: 30),
-        ),
-      ),
-      const SizedBox(height: 12),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(
-          15,
-          (i) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Container(
-              width: 7,
-              height: _recording
-                  ? 8 + ((_seconds * 7 + i * 11) % 30).toDouble()
-                  : 8,
-              color: _recording ? PortColors.primary : PortColors.border,
-            ),
-          ),
-        ),
-      ),
-      const SizedBox(height: 12),
-      Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          PortButton(
-            key: const ValueKey('recorder-record'),
-            leading: Icon(_recording ? Icons.stop : Icons.fiber_manual_record),
-            onPressed: _toggle,
-            child: Text(_recording ? 'Стоп' : 'Запись'),
-          ),
-          PortButton.outline(
-            key: const ValueKey('recorder-rewind'),
-            leading: const Icon(Icons.fast_rewind),
-            onPressed: () {
-              _timer?.cancel();
-              setState(() {
-                _seconds = 0;
-                _recording = false;
-              });
-            },
-            child: const Text('Перемотать'),
-          ),
-          PortButton.outline(
-            key: const ValueKey('recorder-tape'),
-            onPressed: () =>
-                setState(() => _tape = (_tape + 1) % _tapes.length),
-            child: const Text('Сменить кассету'),
-          ),
-        ],
-      ),
-      const SizedBox(height: 10),
-      Text('Кассета: ${_tapes[_tape]}', style: PortText.small),
-      const SizedBox(height: 6),
-      Text(
-        _recording
-            ? 'Ш-ш-ш... воображаемый звук шифрования. Микрофон не используется.'
-            : 'Локальная кассета: ни микрофона, ни аудиозаписи.',
-        style: PortText.muted,
-      ),
-    ],
-  );
-}
-
 class _Doom extends StatefulWidget {
   const _Doom();
   @override
@@ -706,299 +645,6 @@ class _CalculatorState extends State<_Calculator> {
         ),
       Text(
         '÷8: Мбит/с → МБ/с. Без округления до целого пакета.',
-        style: PortText.muted,
-      ),
-    ],
-  );
-}
-
-class _Minecraft extends StatefulWidget {
-  const _Minecraft();
-  @override
-  State<_Minecraft> createState() => _MinecraftState();
-}
-
-class _MinecraftState extends State<_Minecraft> {
-  final _blocks = <int, int>{};
-  int _material = 0;
-  bool _night = false;
-  static const _materials = [
-    ('Трава', Color(0xFF4E9138)),
-    ('Камень', Color(0xFF778899)),
-    ('Дерево', Color(0xFF795548)),
-  ];
-  void _place() => setState(() {
-    for (var i = 18; i >= 0; i -= 6) {
-      for (var x = 0; x < 6; x++) {
-        final cell = i + x;
-        if (!_blocks.containsKey(cell)) {
-          _blocks[cell] = _material;
-          return;
-        }
-      }
-    }
-  });
-  @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Container(
-        height: 130,
-        decoration: BoxDecoration(
-          color: _night ? const Color(0xFF101A38) : const Color(0xFF87CEEB),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          children: [
-            for (var y = 0; y < 4; y++)
-              Expanded(
-                child: Row(
-                  children: [
-                    for (var x = 0; x < 6; x++)
-                      Expanded(
-                        child: GestureDetector(
-                          key: ValueKey('minecraft-cell-${y * 6 + x}'),
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => setState(() {
-                            final cell = y * 6 + x;
-                            if (_blocks.containsKey(cell)) {
-                              _blocks.remove(cell);
-                            } else {
-                              _blocks[cell] = _material;
-                            }
-                          }),
-                          child: Container(
-                            margin: const EdgeInsets.all(1),
-                            color: _blocks.containsKey(y * 6 + x)
-                                ? _materials[_blocks[y * 6 + x]!].$2
-                                : Colors.transparent,
-                            child: Icon(
-                              _blocks.containsKey(y * 6 + x)
-                                  ? Icons.view_in_ar
-                                  : (_night ? Icons.star_outline : Icons.add),
-                              size: 14,
-                              color: _night
-                                  ? const Color(0xFFB8C8FF)
-                                  : const Color(0x55000000),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-      const SizedBox(height: 12),
-      Text(
-        'Блоков в мире: ${_blocks.length}/24 · ${_materials[_material].$1}',
-        style: PortText.small,
-      ),
-      const SizedBox(height: 8),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          PortButton(
-            key: const ValueKey('minecraft-place'),
-            leading: const Icon(Icons.add_box),
-            onPressed: _blocks.length == 24 ? null : _place,
-            child: const Text('Поставить блок'),
-          ),
-          PortButton.outline(
-            key: const ValueKey('minecraft-material'),
-            onPressed: () =>
-                setState(() => _material = (_material + 1) % _materials.length),
-            child: const Text('Материал'),
-          ),
-          PortButton.outline(
-            key: const ValueKey('minecraft-day-night'),
-            onPressed: () => setState(() => _night = !_night),
-            child: Text(_night ? 'Сделать день' : 'Сделать ночь'),
-          ),
-          PortButton.outline(
-            key: const ValueKey('minecraft-clear'),
-            onPressed: () => setState(_blocks.clear),
-            child: const Text('Новый мир'),
-          ),
-        ],
-      ),
-      const SizedBox(height: 8),
-      Text(
-        _blocks.length > 8
-            ? 'Крипер увидел ваш трафик и одобряет.'
-            : 'Строим кубический туннель. Клик по клетке ставит или убирает блок.',
-        style: PortText.muted,
-      ),
-    ],
-  );
-}
-
-class _Youtube extends StatefulWidget {
-  const _Youtube();
-  @override
-  State<_Youtube> createState() => _YoutubeState();
-}
-
-class _YoutubeState extends State<_Youtube> {
-  int _playing = 0;
-  bool _paused = true;
-  int _position = 0;
-  final _likes = <int>{};
-  Timer? _timer;
-  static const _durations = [47, 30, 20];
-  final titles = const [
-    'Как настроить VPN за 47 секунд',
-    '10 часов звука стабильного пинга',
-    'Кот тестирует прокси-сервер',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted || _paused) return;
-      setState(() {
-        if (++_position >= _durations[_playing]) {
-          _position = _durations[_playing];
-          _paused = true;
-        }
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _select(int index) => setState(() {
-    _playing = index;
-    _position = 0;
-    _paused = false;
-  });
-
-  @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Container(
-        height: 120,
-        decoration: BoxDecoration(
-          color: const Color(0xFF181818),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        alignment: Alignment.center,
-        child: GestureDetector(
-          key: const ValueKey('youtube-player'),
-          behavior: HitTestBehavior.opaque,
-          onTap: () => setState(() {
-            if (_position == _durations[_playing]) _position = 0;
-            _paused = !_paused;
-          }),
-          child: SizedBox.expand(
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _paused
-                        ? Icons.play_circle_fill
-                        : [
-                            Icons.security,
-                            Icons.graphic_eq,
-                            Icons.pets,
-                          ][_playing],
-                    color: const Color(0xFFFF3030),
-                    size: 44,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _paused
-                        ? 'Пауза'
-                        : [
-                            'Пакеты надевают шифрование: $_position/47',
-                            'Стабильность пинга: ${10 + _position % 3} мс',
-                            _position.isEven
-                                ? 'Кот: мур-прокси'
-                                : 'Кот проверяет пакеты…',
-                          ][_playing],
-                    style: PortText.muted,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      const SizedBox(height: 8),
-      Text(
-        'Офлайн-пародия: локальные мини-клипы, без сети и настоящего видео.',
-        style: PortText.muted,
-      ),
-      Slider(
-        key: const ValueKey('youtube-seek'),
-        value: _position.toDouble(),
-        max: _durations[_playing].toDouble(),
-        onChanged: (value) => setState(() => _position = value.round()),
-      ),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [
-          PortButton.outline(
-            key: const ValueKey('youtube-play-pause'),
-            onPressed: () => setState(() {
-              if (_position == _durations[_playing]) _position = 0;
-              _paused = !_paused;
-            }),
-            child: Text(_paused ? 'Смотреть' : 'Пауза'),
-          ),
-          PortButton.outline(
-            key: const ValueKey('youtube-next'),
-            onPressed: () => _select((_playing + 1) % titles.length),
-            child: const Text('Следующий'),
-          ),
-          PortButton.outline(
-            key: const ValueKey('youtube-like'),
-            onPressed: () => setState(() {
-              if (!_likes.add(_playing)) _likes.remove(_playing);
-            }),
-            child: Text(
-              _likes.contains(_playing) ? 'Нравится ♥' : 'Нравится ♡',
-            ),
-          ),
-        ],
-      ),
-      const SizedBox(height: 8),
-      for (var i = 0; i < titles.length; i++)
-        GestureDetector(
-          key: ValueKey('youtube-clip-$i'),
-          onTap: () => _select(i),
-          child: Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(top: 5),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: _playing == i ? PortColors.secondary : Colors.transparent,
-              borderRadius: BorderRadius.circular(7),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _playing == i ? Icons.volume_up : Icons.play_arrow,
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                Expanded(child: Text(titles[i], style: PortText.small)),
-              ],
-            ),
-          ),
-        ),
-      const SizedBox(height: 8),
-      Text(
-        '${_paused ? 'На паузе' : 'Сейчас играет'}: ${titles[_playing]} '
-        '· $_position/${_durations[_playing]} с',
         style: PortText.muted,
       ),
     ],

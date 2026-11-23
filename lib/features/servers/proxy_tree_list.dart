@@ -4,7 +4,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../../core_abstraction/core_config_provider.dart' show standaloneParentId;
+import '../../core_abstraction/core_config_provider.dart'
+    show standaloneParentId;
 import '../../core_abstraction/proxy_node.dart';
 import '../../widgets/port_ui/port_ui.dart';
 import 'expanded_nodes_provider.dart';
@@ -29,6 +30,7 @@ class ProxyTreeList extends ConsumerWidget {
   // Пинг — доступен и standalone-серверам, и серверам внутри подписки (см.
   // ROADMAP.md, трек 4). onPingLeaf == null скрывает индикатор целиком.
   final ValueChanged<String>? onPingLeaf;
+  final ValueChanged<List<ServerLeaf>>? onPingGroup;
   final int? Function(String leafId)? latencyForLeaf;
   final Set<String> pingingLeafIds;
   // Id группы, чьи дети рендерит этот уровень рекурсии — нужен только для
@@ -69,6 +71,7 @@ class ProxyTreeList extends ConsumerWidget {
     required this.onSelectVariant,
     this.onHideLeaf,
     this.onPingLeaf,
+    this.onPingGroup,
     this.latencyForLeaf,
     this.pingingLeafIds = const {},
     this.parentGroupId,
@@ -108,6 +111,14 @@ class ProxyTreeList extends ConsumerWidget {
                     depth: depth,
                     expanded: expanded.contains(group.id),
                     onTap: () => toggle(group.id),
+                    onPing:
+                        onPingGroup == null ||
+                            flattenLeaves(group.children).isEmpty
+                        ? null
+                        : () => onPingGroup!(flattenLeaves(group.children)),
+                    pinging: flattenLeaves(
+                      group.children,
+                    ).any((leaf) => pingingLeafIds.contains(leaf.id)),
                   ),
                 ),
                 if (expanded.contains(group.id))
@@ -119,6 +130,7 @@ class ProxyTreeList extends ConsumerWidget {
                     onSelectVariant: onSelectVariant,
                     onHideLeaf: onHideLeaf,
                     onPingLeaf: onPingLeaf,
+                    onPingGroup: onPingGroup,
                     latencyForLeaf: latencyForLeaf,
                     pingingLeafIds: pingingLeafIds,
                     parentGroupId: group.id,
@@ -128,16 +140,15 @@ class ProxyTreeList extends ConsumerWidget {
                   ),
               ],
             ),
-            AutoSelectMarker marker => onSelectAuto == null || parentGroupId == null
-                ? const SizedBox.shrink()
-                : _AutoRow(
-                    marker: marker,
-                    depth: depth,
-                    onTap: () => onSelectAuto!(
-                      parentGroupId!,
-                      flattenLeaves(nodes),
+            AutoSelectMarker marker =>
+              onSelectAuto == null || parentGroupId == null
+                  ? const SizedBox.shrink()
+                  : _AutoRow(
+                      marker: marker,
+                      depth: depth,
+                      onTap: () =>
+                          onSelectAuto!(parentGroupId!, flattenLeaves(nodes)),
                     ),
-                  ),
             ServerLeaf leaf => Padding(
               padding: const EdgeInsets.only(bottom: 2),
               child: Column(
@@ -149,11 +160,8 @@ class ProxyTreeList extends ConsumerWidget {
                     feedbackIcon: leaf.icon,
                     // Дроп на строку сервера = встать перед ним на этом же
                     // уровне.
-                    onAccept: (draggedId) => onReorder!(
-                      draggedId,
-                      ownParentId,
-                      nodes.indexOf(leaf),
-                    ),
+                    onAccept: (draggedId) =>
+                        onReorder!(draggedId, ownParentId, nodes.indexOf(leaf)),
                     child: ServerRow(
                       leaf: leaf,
                       depth: depth,
@@ -219,10 +227,7 @@ class ProxyTreeList extends ConsumerWidget {
             ? DecoratedBox(
                 decoration: BoxDecoration(
                   border: Border(
-                    top: BorderSide(
-                      color: PortColors.primary,
-                      width: 2,
-                    ),
+                    top: BorderSide(color: PortColors.primary, width: 2),
                   ),
                 ),
                 child: child,
@@ -275,9 +280,7 @@ class _TrailingDropZone extends StatelessWidget {
           height: hovering ? 20 : 8,
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
-            color: hovering
-                ? PortColors.accent.withValues(alpha: 0.5)
-                : null,
+            color: hovering ? PortColors.accent.withValues(alpha: 0.5) : null,
             borderRadius: BorderRadius.circular(6),
           ),
         );
@@ -329,7 +332,11 @@ class _AutoRow extends StatefulWidget {
   final int depth;
   final VoidCallback onTap;
 
-  const _AutoRow({required this.marker, required this.depth, required this.onTap});
+  const _AutoRow({
+    required this.marker,
+    required this.depth,
+    required this.onTap,
+  });
 
   @override
   State<_AutoRow> createState() => _AutoRowState();
@@ -359,7 +366,11 @@ class _AutoRowState extends State<_AutoRow> {
           ),
           child: Row(
             children: [
-              Icon(LucideIcons.zap, size: 15, color: PortColors.mutedForeground),
+              Icon(
+                LucideIcons.zap,
+                size: 15,
+                color: PortColors.mutedForeground,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -381,12 +392,16 @@ class _GroupRow extends StatefulWidget {
   final int depth;
   final bool expanded;
   final VoidCallback onTap;
+  final VoidCallback? onPing;
+  final bool pinging;
 
   const _GroupRow({
     required this.group,
     required this.depth,
     required this.expanded,
     required this.onTap,
+    this.onPing,
+    this.pinging = false,
   });
 
   @override
@@ -426,12 +441,22 @@ class _GroupRowState extends State<_GroupRow> {
               Expanded(
                 child: Text(
                   widget.group.name,
-                  style: PortText.small.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: PortText.small.copyWith(fontWeight: FontWeight.w500),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              if (widget.onPing != null)
+                PortIconButton.ghost(
+                  key: ValueKey('ping-group-${widget.group.id}'),
+                  size: 26,
+                  icon: Icon(
+                    widget.pinging
+                        ? LucideIcons.hourglass
+                        : LucideIcons.activity,
+                    size: 14,
+                  ),
+                  onPressed: widget.pinging ? null : widget.onPing,
+                ),
               Icon(
                 widget.expanded
                     ? LucideIcons.chevronUp

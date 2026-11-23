@@ -9,6 +9,7 @@ class PortDialog extends StatelessWidget {
   final Widget? child;
   final List<Widget> actions;
   final bool showCloseButton;
+  final double maxWidth;
 
   const PortDialog({
     super.key,
@@ -16,6 +17,7 @@ class PortDialog extends StatelessWidget {
     this.description,
     this.child,
     this.actions = const [],
+    this.maxWidth = 420,
   }) : showCloseButton = true;
 
   const PortDialog.alert({
@@ -23,6 +25,7 @@ class PortDialog extends StatelessWidget {
     required this.title,
     this.description,
     this.actions = const [],
+    this.maxWidth = 420,
   }) : child = null,
        showCloseButton = false;
 
@@ -31,7 +34,7 @@ class PortDialog extends StatelessWidget {
     return Center(
       child: Container(
         constraints: BoxConstraints(
-          maxWidth: 420,
+          maxWidth: maxWidth,
           maxHeight: MediaQuery.sizeOf(context).height - 64,
         ),
         padding: const EdgeInsets.all(24), // p-6

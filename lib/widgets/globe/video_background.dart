@@ -10,8 +10,13 @@ import 'package:video_player/video_player.dart';
 /// (`custom_video_storage.dart`).
 class VideoBackground extends StatefulWidget {
   final String filePath;
+  final VideoPlayerController Function(String)? controllerFactory;
 
-  const VideoBackground({super.key, required this.filePath});
+  const VideoBackground({
+    super.key,
+    required this.filePath,
+    this.controllerFactory,
+  });
 
   @override
   State<VideoBackground> createState() => _VideoBackgroundState();
@@ -20,6 +25,9 @@ class VideoBackground extends StatefulWidget {
 class _VideoBackgroundState extends State<VideoBackground> {
   VideoPlayerController? _controller;
   bool _failed = false;
+  int _generation = 0;
+  final _pending = <VideoPlayerController>{};
+  final _disposals = Expando<Future<void>>();
 
   @override
   void initState() {
@@ -31,7 +39,12 @@ class _VideoBackgroundState extends State<VideoBackground> {
   void didUpdateWidget(covariant VideoBackground oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.filePath != widget.filePath) {
-      _controller?.dispose();
+      _generation++;
+      final old = _controller;
+      if (old != null) _disposeController(old);
+      for (final pending in _pending.toList()) {
+        _disposeController(pending);
+      }
       _controller = null;
       _failed = false;
       _load();
@@ -39,28 +52,56 @@ class _VideoBackgroundState extends State<VideoBackground> {
   }
 
   Future<void> _load() async {
-    final controller = VideoPlayerController.file(File(widget.filePath));
+    final generation = ++_generation;
+    VideoPlayerController? controller;
+    var accepted = false;
+    bool current() => mounted && generation == _generation;
     try {
+      controller =
+          widget.controllerFactory?.call(widget.filePath) ??
+          VideoPlayerController.file(File(widget.filePath));
+      _pending.add(controller);
       await controller.initialize();
-      if (!mounted) {
-        controller.dispose();
-        return;
-      }
+      if (!current()) return;
       await controller.setLooping(true);
+      if (!current()) return;
       await controller.setVolume(0);
+      if (!current()) return;
       await controller.play();
+      if (!current()) return;
       setState(() => _controller = controller);
+      accepted = true;
     } catch (_) {
       // Файл мог быть удалён/повреждён/в неподдерживаемом формате извне
       // приложения — тихо остаёмся без фона, а не роняем экран подключения.
-      controller.dispose();
-      if (mounted) setState(() => _failed = true);
+      if (current()) setState(() => _failed = true);
+    } finally {
+      _pending.remove(controller);
+      if (!accepted && controller != null) await _disposeController(controller);
+    }
+  }
+
+  Future<void> _disposeController(VideoPlayerController controller) {
+    _pending.remove(controller);
+    return _disposals[controller] ??= _release(controller);
+  }
+
+  Future<void> _release(VideoPlayerController controller) async {
+    try {
+      await controller.dispose();
+    } catch (_) {
+      // An obsolete or unavailable decoder cannot break the connection screen.
     }
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _generation++;
+    final controller = _controller;
+    if (controller != null) _disposeController(controller);
+    for (final pending in _pending.toList()) {
+      _disposeController(pending);
+    }
     super.dispose();
   }
 

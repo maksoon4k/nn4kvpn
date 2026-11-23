@@ -111,14 +111,23 @@ installer SHA-256, stop owned engines, install in place and restart. End-to-end
 upgrading to a genuinely newer release still requires a separate installation test.
 
 ### What's new
-- DNS diagnostics under Ping: consent, sequential reachability/latency checks,
-  automatic selection of a reliable encrypted primary/backup pair, and saved
-  settings. Cancellation or no working pair preserves the previous DNS choice.
-- Repaired the bottom-right tools menu and its controls, including keyboard and
-  small-window use. All six tools are local playful demos, not network games,
-  a microphone recorder or an online video player.
-- Simplified update settings: removed repository/token configuration and source
-  identity from the application interface.
+- YouTube now opens the real site in the system browser. Home, search and
+  `youtube.com`/`youtu.be` links are validated and opened over HTTPS; no
+  embedded player or account token is added.
+- The cassette recorder now actually plays sound: original synthesized PCM loops
+  or a user-picked local audio file. Microphone recording is still not included.
+- Added a bounded first-person 3D voxel sandbox and Minesweeper. Losing
+  Minesweeper offers a safe close of NN4K; it never crashes the app or changes
+  the VPN on its own. Both are local and need no downloads.
+- Targeted pings: right-click a server to ping it, or use the button beside a
+  folder to ping that group. Stale replies are invalidated and never overwrite
+  a newer request.
+- Fixed newly imported backgrounds sometimes never replacing the previous one.
+  Imports use immutable names and the old copy is retired only after the new
+  selection is saved.
+- Per-application TUN routing: `direct`/`proxy`/`block` rules, whitelist and
+  blacklist defaults, a running-process picker, manual executable entries and a
+  JSON editor. Rules persist across restarts and are validated before saving.
 
 Builds are not Authenticode-signed unless the owner adds signing separately.
 A checksum confirms integrity; it is not an antivirus or publisher-trust guarantee.

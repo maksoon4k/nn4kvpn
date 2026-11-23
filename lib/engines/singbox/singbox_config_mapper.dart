@@ -3,6 +3,7 @@ import 'dart:io';
 import '../../core_abstraction/app_settings.dart';
 import '../../core_abstraction/dns_resolver.dart';
 import '../../core_abstraction/proxy_node.dart';
+import '../../core_abstraction/tun_application_routing.dart';
 
 /// Фиксированное имя TUN-адаптера — та же причина, что была у
 /// одноимённой xray-константы: без него имя генерируется случайно при
@@ -143,7 +144,12 @@ Map<String, dynamic> buildSingBoxTunBridgeConfig({
   List<RoutingRule> routingRules = const [],
   Map<String, String> ruleSetPaths = const {},
   String defaultOutboundTag = 'proxy',
+  TunApplicationRouting applicationRouting = const TunApplicationRouting(),
 }) {
+  applicationRouting.requireValid();
+  final domainRules = applicationRouting.enabled
+      ? <RoutingRule>[]
+      : routingRules;
   return {
     'log': {'level': logLevel.singBoxName},
     'dns': {
@@ -295,11 +301,15 @@ Map<String, dynamic> buildSingBoxTunBridgeConfig({
         // инфраструктурные страховки (мультикаст, DoH, hijack-dns, обход
         // адреса сервера), которые не должны переопределяться конфигом
         // сервиса.
-        ..._userRoutingRules(routingRules, defaultOutboundTag),
+        ..._applicationRoutingRules(applicationRouting),
+        ..._userRoutingRules(domainRules, defaultOutboundTag),
       ],
-      if (geoRuleSetReferences(routingRules).isNotEmpty)
+      if (applicationRouting.enabled &&
+          applicationRouting.rules.any((r) => r.enabled))
+        'find_process': true,
+      if (geoRuleSetReferences(domainRules).isNotEmpty)
         'rule_set': [
-          for (final tag in geoRuleSetReferences(routingRules))
+          for (final tag in geoRuleSetReferences(domainRules))
             {
               'type': 'local',
               'tag': tag,
@@ -316,9 +326,39 @@ Map<String, dynamic> buildSingBoxTunBridgeConfig({
       // `bootstrap` по той же причине, по которой он вообще появился — резолв
       // для outbound'ов не должен зависеть от ещё не поднятого тоннеля.
       'default_domain_resolver': 'bootstrap',
-      'final': _finalOutboundTag(defaultOutboundTag),
+      'final': _finalOutboundTag(
+        applicationRouting.enabled
+            ? applicationRouting.defaultAction.name
+            : defaultOutboundTag,
+      ),
     },
   };
+}
+
+List<Map<String, dynamic>> _applicationRoutingRules(
+  TunApplicationRouting policy,
+) {
+  if (!policy.enabled) return const [];
+  // The pinned core's process_name lookup is case-sensitive. Windows filename
+  // identities are not: use escaped, anchored RE2 process-path expressions.
+  // Paths precede filenames so a specific installation can override a name.
+  return [
+    for (final match in [
+      TunApplicationMatch.processPath,
+      TunApplicationMatch.processName,
+    ])
+      for (final rule in policy.rules.where(
+        (r) => r.enabled && r.match == match,
+      ))
+        {
+          'process_path_regex': [
+            match == TunApplicationMatch.processPath
+                ? '(?i)^${RegExp.escape(rule.value)}\$'
+                : '(?i)(?:^|[\\\\/])${RegExp.escape(rule.value)}\$',
+          ],
+          ..._outboundOrAction(rule.action.name),
+        },
+  ];
 }
 
 Map<String, dynamic> _tlsDnsServer(

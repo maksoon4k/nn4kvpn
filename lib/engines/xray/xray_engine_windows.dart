@@ -87,6 +87,7 @@ class XrayEngineWindows implements CoreEngine {
   Future<void> start(
     CoreConfig config, {
     bool manageSystemProxy = true,
+    bool applyRoutingRules = true,
     String defaultOutboundTag = 'proxy',
     String routingLabel = 'server-routing',
   }) async {
@@ -108,7 +109,7 @@ class XrayEngineWindows implements CoreEngine {
       server,
       socksPort: socksPort,
       httpPort: httpPort,
-      routingRules: leaf.routingRules,
+      routingRules: applyRoutingRules ? leaf.routingRules : const [],
       defaultOutboundTag: defaultOutboundTag,
       logLevel: logLevel,
     );
@@ -138,7 +139,7 @@ class XrayEngineWindows implements CoreEngine {
         routingDebugHeader(
           routingLabel: routingLabel,
           defaultOutboundTag: defaultOutboundTag,
-          ruleCount: leaf.routingRules.length,
+          ruleCount: applyRoutingRules ? leaf.routingRules.length : 0,
         ),
       ),
     );

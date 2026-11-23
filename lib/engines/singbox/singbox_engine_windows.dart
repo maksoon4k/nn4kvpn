@@ -6,6 +6,7 @@ import '../../app/app_paths.dart';
 import '../../core_abstraction/app_settings.dart';
 import '../../core_abstraction/core_engine.dart';
 import '../../core_abstraction/proxy_node.dart';
+import '../../core_abstraction/tun_application_routing.dart';
 import '../routing_debug_header.dart';
 import '../xray/child_process_job.dart';
 import 'geo_ruleset_cache.dart';
@@ -40,10 +41,13 @@ class SingBoxEngineWindows {
     List<RoutingRule> routingRules = const [],
     String defaultOutboundTag = 'proxy',
     String routingLabel = 'server-routing',
+    TunApplicationRouting applicationRouting = const TunApplicationRouting(),
   }) async {
     _statusController.add(EngineStatus.starting);
 
-    final ruleSetPaths = await _resolveRuleSetPaths(routingRules);
+    final ruleSetPaths = await _resolveRuleSetPaths(
+      applicationRouting.enabled ? const [] : routingRules,
+    );
 
     final config = buildSingBoxTunBridgeConfig(
       socksInPort: socksInPort,
@@ -56,6 +60,7 @@ class SingBoxEngineWindows {
       routingRules: routingRules,
       ruleSetPaths: ruleSetPaths,
       defaultOutboundTag: defaultOutboundTag,
+      applicationRouting: applicationRouting,
     );
     final configFile = await File(
       '${ensureFluxLogDirectory()}/flux_singbox_$id.json',
