@@ -9,7 +9,10 @@ param(
 # inspect live processes, change routes/DNS, contact a server or read profiles.
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
-if (-not $DartPath) { $DartPath = Join-Path $repoRoot 'tool\flutter\bin\dart.bat' }
+if (-not $DartPath) {
+    $command = Get-Command dart.bat -ErrorAction SilentlyContinue
+    $DartPath = if ($command) { $command.Source } else { Join-Path $repoRoot 'tool\flutter\bin\dart.bat' }
+}
 if (-not $SingBoxPath) { $SingBoxPath = Join-Path $repoRoot 'assets\sing-box\sing-box.exe' }
 if (-not (Test-Path -LiteralPath $DartPath -PathType Leaf) -or
     -not (Test-Path -LiteralPath $SingBoxPath -PathType Leaf)) {
