@@ -76,6 +76,9 @@ jobs:
         env:
           INNO_COMPILER: ${{ steps.inno.outputs.compiler }}
         run: ./scripts/build_installer.ps1 -UpdateRepository $env:GITHUB_REPOSITORY -IsccPath $env:INNO_COMPILER
+      - name: Offline DNS configuration schemas (no engine startup)
+        shell: pwsh
+        run: ./scripts/check_dns_configs.ps1 -Directory "$env:RUNNER_TEMP\nn4k-dns-schema"
       - name: Isolated safe-start UI checks (no live Proxy/TUN)
         shell: pwsh
         run: |
@@ -104,6 +107,9 @@ jobs:
 
   publish:
     needs: [check-version, build-windows]
+    # Private preparation runs may build/test packages, but cannot publish.
+    # The script independently rechecks public visibility and numeric identity.
+    if: github.event.repository.private == false
     runs-on: windows-latest
     permissions:
       contents: write
@@ -123,4 +129,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.check-version.outputs.version }}
         shell: pwsh
-        run: ./scripts/publish_windows_release.ps1 -Repository $env:GITHUB_REPOSITORY -Version $env:VERSION -ArtifactDirectory release-artifacts -TargetCommit $env:GITHUB_SHA
+        run: ./scripts/publish_windows_release.ps1 -Repository $env:GITHUB_REPOSITORY -ExpectedRepositoryId ${{ github.repository_id }} -Version $env:VERSION -ArtifactDirectory release-artifacts -TargetCommit $env:GITHUB_SHA

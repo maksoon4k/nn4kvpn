@@ -12,6 +12,15 @@
 //   dart run tool/dump_singbox_config.dart > cfg.json
 //   sing-box check -c cfg.json           # схема
 //
+//   dart run tool/dump_singbox_config.dart --dns-pair 0 > pair.json
+//   dart run tool/dump_singbox_config.dart --dns-pair 0 --reverse-dns-pair > reverse.json
+//   sing-box check -c pair.json          # обе ориентации всех 7 пар
+//
+// В автоматических проверках этого проекта разрешён только `check`, не `run`.
+// Ни разбор схемы, ни запуск приложения без подключения не сертифицирует VPN.
+// Следующий probe-конфиг — инструмент для отдельной разрешённой проверки, а
+// не разрешение запускать Proxy/TUN на машине пользователя:
+//
 //   dart run tool/dump_singbox_config.dart --probe-inbound > probe.json
 //   sing-box run -c probe.json           # старт сервиса
 //
@@ -25,13 +34,24 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flux/core_abstraction/dns_resolver.dart';
 import 'package:flux/engines/singbox/singbox_config_mapper.dart';
 
 void main(List<String> args) {
+  final pairIndex = args.indexOf('--dns-pair');
+  final pair = pairIndex < 0
+      ? null
+      : diagnosticDnsPairs[int.parse(args[pairIndex + 1])];
+  final reverse = args.contains('--reverse-dns-pair');
+  if (reverse && pair == null) {
+    throw const FormatException('--reverse-dns-pair requires --dns-pair');
+  }
   final config = buildSingBoxTunBridgeConfig(
     socksInPort: 10808,
     serverHost: 'de1.example.com',
     serverIps: const ['203.0.113.7', '2001:db8::1'],
+    upstreamDns: (reverse ? pair?.secondary : pair?.primary) ?? '8.8.8.8',
+    upstreamDnsSecondary: (reverse ? pair?.primary : pair?.secondary) ?? '',
   );
 
   if (args.contains('--probe-inbound')) {

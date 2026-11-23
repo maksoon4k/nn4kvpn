@@ -1,4 +1,4 @@
-# Qualified security review — NN4K 1.4.3+8
+# Qualified Windows security review — NN4K
 
 Review dates: **2026-11-22–23**. Scope: the supplied source tree, Windows-sensitive
 application code, dependencies, packaging and the new GitHub updater.
@@ -17,7 +17,51 @@ does not cover every native/embedded component. Inherited non-Windows platform
 code was not dynamically validated. Live Proxy/TUN tests were deliberately not
 performed, as required by this project's `CLAUDE.md`.
 
-## Validation evidence
+## Public 1.4.4 changes — 2026-11-23
+
+The maintainer confirmed the original author's permission for public modified
+source/Windows distribution. No top-level application license was invented;
+see [attribution and component terms](../THIRD_PARTY_NOTICES.md).
+
+- The executable publisher is pinned at build time. Imported repository/token
+  fields cannot select it; the production update controller makes anonymous
+  requests and never reads legacy Credential Manager entries. Automatic-install
+  consent is persisted with its publisher identity and migrated fail-closed.
+- The tools menu now uses a real overlay hit-test area. All six local demos have
+  working actions, keyboard activation, dismissal and bounded/scrollable dialogs;
+  recorder/video timers are owned and canceled on disposal. No media permissions,
+  online video, external game code or network operation was introduced by them.
+- [DNS diagnostics](DNS_DIAGNOSTICS.md) require explicit consent and an idle VPN,
+  use only curated literal addresses and three example domains, and rank actual
+  certificate-verified DoT answers rather than ICMP alone. Parsing/frame budgets,
+  deadlines and cancellation close owned probes. Saving is atomic; cancellation,
+  dialog closure, VPN activation, manual DNS changes and storage failure must not
+  overwrite the previous/newer choice or unrelated appearance/onboarding settings.
+- A validated same-provider encrypted backup is propagated into sing-box's TUN
+  mapper. Two-second evaluate/route deadlines and explicit TLS identities support
+  failover without plain-DNS fallback for TUN user queries; valid NOERROR/NXDOMAIN
+  answers are retained. Short direct-network diagnostics are not a live TUN test.
+- Public publication now pins a numeric repository identity, rechecks public
+  visibility/name/ID, and retains draft-first size/digest/tag/target checks and
+  the prohibition on replacing published assets. Private preparation builds skip
+  publication. Required original/component notices are staged into both packages.
+
+The complete pre-publication history scan inspected all **478 locally reachable
+Git objects** (4 commits, 361 blobs, 113 tree entries skipped by content scan).
+All **21 URI findings** were individually reviewed: documentation/parser syntax
+and synthetic test fixtures using example/reserved endpoints and placeholder
+credentials. No high-risk token/private-key heuristic matches were found. This
+is not proof of absence of unknown or encoded secrets, and does not scan upstream
+history that is not present in this repository. Individual finding dispositions
+and the visibility review are recorded in [PUBLICATION_REVIEW.md](PUBLICATION_REVIEW.md).
+
+The isolated local 1.4.4 validation passed **383 Flutter tests**, **23 offline
+publishing guards** and **15 sing-box schema checks**. The analyzer reported no
+errors or warnings and **11 informational lints**. These local checks do not
+replace hosted Windows packaging or both strict startup gates; the final release
+must use their exact successfully tested CI artifacts.
+
+## Initial 1.4.3 validation evidence (historical)
 
 | Check | Recorded result |
 | --- | --- |
@@ -134,9 +178,9 @@ clean-machine/Windows N compatibility test remain untested. See
 
 ### Executable updates and publishing
 
-- Introduced an in-app Windows updater targeting the user's repository,
-  not a hardcoded upstream publisher. Repository input is normalized and
-  restricted to a valid GitHub owner/repository.
+- Introduced an in-app Windows updater targeting this fork's build-pinned
+  publisher, not the upstream repository. Publisher parsing is normalized and
+  restricted to a valid GitHub owner/repository; there is no editable setting.
 - Require stable, newer semantic versions, the exact Windows installer asset,
   uploaded state, bounded size and GitHub SHA-256 metadata.
 - Use constructed GitHub API URLs, HTTPS-only allowlisted redirects, and
@@ -145,8 +189,9 @@ clean-machine/Windows N compatibility test remain untested. See
 - Stream installer bytes to disk with awaited writes; enforce size/time bounds,
   validate SHA-256 and executable header, and verify the file again before
   execution. Reject tampering, replaced assets and stale repository results.
-- Store a separate read-only token per repository in Windows Credential
-  Manager; never serialize it into settings or compile it into the application.
+- Production-controller requests are anonymous. The legacy low-level credential
+  helper is not read by the controller/scheduler/UI; old entries are not copied,
+  serialized or compiled into this application.
 - Default automatic executable installation to off. Defer it while VPN is
   active, invalidate consent on publisher changes, and recheck consent and
   cancellation after asynchronous validation and immediately before launch.
@@ -212,9 +257,7 @@ clean-machine/Windows N compatibility test remain untested. See
    the release service, not an independent signature. A compromised repository
    owner or publishing credential can publish malicious updates with valid
    hashes. No Authenticode signing is configured.
-2. **Local user/admin compromise.** Credential Manager protects credentials at
-   rest for the Windows user, not against malicious software running as that
-   same user. Per-user executables, configurations and staged updates are
+2. **Local user/admin compromise.** Per-user executables, configurations and staged updates are
    writable by that user. Final rehashing narrows but does not eliminate the
    hash-to-execution race against a local attacker.
 3. **Unauthenticated loopback IPC.** Limits reduce abuse, but a local process
@@ -241,10 +284,14 @@ clean-machine/Windows N compatibility test remain untested. See
 8. **Upstream compatibility.** The fork retains `%AppData%\flux`, the URI
    scheme, IPC port and installer AppId for compatibility. Avoid running the
    original Flux and this fork concurrently against shared data/settings.
-9. **Licensing unresolved.** The supplied tree has no top-level application
-   license; GitHub's upstream metadata reported `license: null`. Clarify rights
-   with the original author before distributing source/binaries. Core license
-   files alone do not grant a license for the application.
+9. **Licensing scope.** The supplied tree has no top-level application license;
+   GitHub's upstream metadata reported `license: null`. The maintainer confirmed
+   permission for this public source/binary distribution. That is not a blanket
+   open-source license for downstream reuse; component licenses remain separate.
+10. **DNS measurement limits.** The diagnostics compare a short sample on the
+    current direct network. DoT certificate checks do not certify DNSSEC,
+    censorship resistance, a provider's data policy or live VPN leak prevention.
+    Resolver filtering policies differ and encrypted DNS may be blocked later.
 
 ## Remaining follow-up
 
@@ -256,8 +303,8 @@ clean-machine/Windows N compatibility test remain untested. See
   Proxy/TUN testing on the user's machine.
 - Test clean-machine Windows prerequisites and Windows N/KN separately; startup
   does not validate the inherited JNI/JVM asset.
-- Revoke the PAT previously exposed in chat and create a separate expiring,
-  repository-scoped **Contents: Read-only** updater token. Revocation of that
-  exposed token has not been verified; do not reuse it.
-- Resolve licensing; consider independent release signing and a durable,
+- Revoke the PAT previously exposed in chat. Revocation has not been verified;
+  do not reuse it. The public application needs no replacement updater token;
+  maintainer publication authentication must remain separate and scoped.
+- Retain the author's permission and component notices; consider independent release signing and a durable,
   ownership-aware crash-recovery mechanism for proxy state.

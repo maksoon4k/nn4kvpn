@@ -36,7 +36,8 @@ if ($pubspec -notmatch "(?m)^version:\s*(\S+)") {
 }
 # pubspec version is "1.0.0+1" (semver+build number) — Inno Setup's
 # AppVersion only wants the semver part.
-$version = $Matches[1].Split('+')[0]
+$productVersion = $Matches[1]
+$version = $productVersion.Split('+')[0]
 
 Write-Output "Building NN4K $version (Release)..."
 if ($UpdateRepository -and $UpdateRepository -notmatch '^[a-zA-Z0-9][a-zA-Z0-9-]{0,38}/[a-zA-Z0-9_.-]{1,100}$') {
@@ -74,14 +75,21 @@ try {
     if (-not $IsccPath) { throw 'ISCC.exe not found; run scripts/install_inno_setup.ps1 or supply -IsccPath' }
     $release = Join-Path $repoRoot 'build\windows\x64\runner\Release'
     if (-not (Test-Path -LiteralPath (Join-Path $release 'nn4k.exe'))) { throw 'Release nn4k.exe not found' }
+    if ((Get-Item -LiteralPath (Join-Path $release 'nn4k.exe')).VersionInfo.ProductVersion -cne $productVersion) {
+        throw 'The compiled application version differs from pubspec.yaml; rebuild before packaging.'
+    }
     foreach ($relative in @(
         'flutter_windows.dll', 'local_notifier_plugin.dll',
         'screen_retriever_windows_plugin.dll', 'tray_manager_plugin.dll',
         'video_player_win_plugin.dll', 'window_manager_plugin.dll', 'dartjni.dll',
         'data\icudtl.dat', 'data\app.so', 'data\flutter_assets\AssetManifest.bin',
+        'data\flutter_assets\NOTICES.Z', 'THIRD_PARTY_NOTICES.md',
+        'assets\globe\NOTICE.md', 'licenses\GPL-3.0.txt',
         'assets\xray\xray.exe', 'assets\xray\wintun.dll',
         'assets\xray\LICENSE', 'assets\xray\LICENSE-Wintun',
+        'assets\xray\SOURCE.md',
         'assets\sing-box\sing-box.exe', 'assets\sing-box\LICENSE',
+        'assets\sing-box\SOURCE.md',
         'data\flutter_assets\FontManifest.json',
         'data\flutter_assets\assets\fonts\OFL.txt',
         'data\flutter_assets\assets\fonts\SOURCE.md'

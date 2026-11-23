@@ -50,6 +50,10 @@ jobs:
         env:
           INNO_COMPILER: ${{ steps.inno.outputs.compiler }}
         run: ./scripts/build_installer.ps1 -UpdateRepository $env:GITHUB_REPOSITORY -IsccPath $env:INNO_COMPILER
+      - name: Offline DNS configuration schemas (no engine startup)
+        if: github.event_name == 'workflow_dispatch' && inputs.build_windows
+        shell: pwsh
+        run: ./scripts/check_dns_configs.ps1 -Directory "$env:RUNNER_TEMP\nn4k-dns-schema"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: github.event_name == 'workflow_dispatch' && inputs.build_windows
         with:

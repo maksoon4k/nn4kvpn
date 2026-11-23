@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import '../../core_abstraction/app_settings.dart';
+import '../../core_abstraction/dns_resolver.dart';
 import '../../core_abstraction/proxy_node.dart';
 
 /// Фиксированное имя TUN-адаптера — та же причина, что была у
@@ -137,6 +138,7 @@ Map<String, dynamic> buildSingBoxTunBridgeConfig({
   List<String> additionalServerHosts = const [],
   List<String> serverIps = const [],
   String upstreamDns = defaultTunDnsServer,
+  String upstreamDnsSecondary = '',
   CoreLogLevel logLevel = CoreLogLevel.warn,
   List<RoutingRule> routingRules = const [],
   Map<String, String> ruleSetPaths = const {},
@@ -160,12 +162,14 @@ Map<String, dynamic> buildSingBoxTunBridgeConfig({
       // при неизменных 6 записях на A.
       'strategy': 'ipv4_only',
       'servers': [
-        {
-          'tag': 'remote',
-          'type': 'tls',
-          'server': upstreamDns,
-          'detour': 'xray-socks-out',
-        },
+        _tlsDnsServer('remote', upstreamDns, insideTunnel: true),
+        if (upstreamDnsSecondary.isNotEmpty &&
+            upstreamDnsSecondary != upstreamDns)
+          _tlsDnsServer(
+            'remote-backup',
+            upstreamDnsSecondary,
+            insideTunnel: true,
+          ),
         // Без `detour` — и это именно то, что нужно, а не недосмотр: DNS-сервер
         // без detour дозванивается напрямую, минуя и `route.final`, и правила
         // роутинга вообще. Проверено на живом бинарнике: с заведомо мёртвым
@@ -173,14 +177,22 @@ Map<String, dynamic> buildSingBoxTunBridgeConfig({
         // Явный `detour: direct` тут написать нельзя — sing-box 1.13 отвергает
         // его на старте (`start dns/tls[bootstrap]: detour to an empty direct
         // outbound makes no sense`), потому что это ровно то же самое.
-        {'tag': 'bootstrap', 'type': 'tls', 'server': upstreamDns},
+        _tlsDnsServer('bootstrap', upstreamDns, insideTunnel: false),
+        if (upstreamDnsSecondary.isNotEmpty &&
+            upstreamDnsSecondary != upstreamDns)
+          _tlsDnsServer(
+            'bootstrap-backup',
+            upstreamDnsSecondary,
+            insideTunnel: false,
+          ),
       ],
-      'rules': [
-        {
-          'domain': {serverHost, ...additionalServerHosts}.toList(),
-          'server': 'bootstrap',
-        },
-      ],
+      'rules': _dnsRules(
+        {serverHost, ...additionalServerHosts}.toList(),
+        hasBackup:
+            upstreamDnsSecondary.isNotEmpty &&
+            upstreamDnsSecondary != upstreamDns,
+      ),
+      'final': 'remote',
     },
     'inbounds': [
       {
@@ -309,13 +321,65 @@ Map<String, dynamic> buildSingBoxTunBridgeConfig({
   };
 }
 
+Map<String, dynamic> _tlsDnsServer(
+  String tag,
+  String address, {
+  required bool insideTunnel,
+}) => {
+  'tag': tag,
+  'type': 'tls',
+  'server': address,
+  'tls': {'enabled': true, 'server_name': ?dnsTlsServerNameFor(address)},
+  if (insideTunnel) 'detour': 'xray-socks-out',
+};
+
+List<Map<String, dynamic>> _dnsRules(
+  List<String> bootstrapHosts, {
+  required bool hasBackup,
+}) {
+  if (!hasBackup) {
+    return [
+      {'domain': bootstrapHosts, 'server': 'bootstrap', 'action': 'route'},
+    ];
+  }
+  // sing-box 1.14 evaluate/respond supports bounded same-provider failover.
+  // Valid negative answers are preserved, not bypassed through another DNS.
+  // Bootstrap exceptions remain restricted to the VPN's own hostnames;
+  // ordinary DNS, including its backup, never falls back outside the tunnel.
+  return [
+    for (final route in ['bootstrap', 'remote']) ...[
+      {
+        if (route == 'bootstrap') 'domain': bootstrapHosts,
+        'action': 'evaluate',
+        'server': route,
+        'tag': '$route-primary',
+        'timeout': '2s',
+      },
+      for (final code in ['NOERROR', 'NXDOMAIN'])
+        {
+          if (route == 'bootstrap') 'domain': bootstrapHosts,
+          'match_response': '$route-primary',
+          'response_rcode': code,
+          'action': 'respond',
+        },
+      {
+        if (route == 'bootstrap') 'domain': bootstrapHosts,
+        'action': 'route',
+        'server': '$route-backup',
+        'timeout': '2s',
+      },
+    ],
+  ];
+}
+
 /// [defaultOutboundTag] — `RoutingPreset.defaultOutboundTag`
 /// (`"proxy"`/`"direct"`/`"block"`, см. ROADMAP.md трек 3). `route.final`
 /// требует именно тег outbound'а, а не `action` — поэтому у `"block"` тут
 /// нет короткого пути через `reject`, как у обычных `route.rules`
 /// (`_outboundOrAction`): вместо этого выше в `outbounds` заведён отдельный
 /// `{type: "block", tag: "block"}`.
-String _finalOutboundTag(String defaultOutboundTag) => _outboundTagForSingBox(defaultOutboundTag);
+String _finalOutboundTag(String defaultOutboundTag) =>
+    _outboundTagForSingBox(defaultOutboundTag);
 
 /// `outboundTag` в терминологии `RoutingRule`/`RoutingPreset` —
 /// `"proxy"`/`"direct"`/`"block"` — сам по себе не тег ни одного outbound'а
@@ -436,7 +500,8 @@ List<Map<String, dynamic>> _userRoutingRules(
   return result;
 }
 
-Map<String, dynamic> _outboundOrAction(String outboundTag) => outboundTag == 'block'
+Map<String, dynamic> _outboundOrAction(String outboundTag) =>
+    outboundTag == 'block'
     ? {'action': 'reject'}
     // `outboundTag` здесь в терминологии `RoutingRule` (`"proxy"`/`"direct"`)
     // — нужно смэппить через `_outboundTagForSingBox`, а не подставлять

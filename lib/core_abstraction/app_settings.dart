@@ -1,4 +1,5 @@
 import 'connection_session.dart';
+import 'dns_resolver.dart';
 import 'home_tile_config.dart';
 
 /// Тема оформления — `system` следует настройке ОС, см. [AppSettings].
@@ -81,9 +82,11 @@ const defaultGeositeUrl =
 
 const defaultServerPanelWidth = 260.0;
 
-/// CI sets this to its own repository; local builds can configure it in About.
+/// Build-time public update origin. Never read an executable publisher from
+/// imported settings; changing it requires a new application build.
 const defaultUpdateRepository = String.fromEnvironment(
   'NN4K_UPDATE_REPOSITORY',
+  defaultValue: 'maksoon4k/nn4kvpn',
 );
 
 /// Настройки приложения — отдельно от [CoreConfig] (серверы/подписки):
@@ -131,6 +134,10 @@ class AppSettings {
   /// резолвит на своей стороне — настройка «DNS для прокси» была бы ручкой,
   /// которая ни на что не влияет.
   final String tunDnsServer;
+
+  /// Optional, measured backup from the same DNS provider. Empty for legacy
+  /// single-resolver settings. Both addresses continue to use verified DoT.
+  final String tunDnsSecondaryServer;
   final CoreLogLevel coreLogLevel;
 
   /// Кастомные ссылки на `geoip.dat`/`geosite.dat` — см. ROADMAP.md, трек 20.
@@ -179,9 +186,6 @@ class AppSettings {
   /// [defaultHomeTiles] воспроизводит вид до появления кастомизации 1:1.
   final List<HomeTileConfig> homeTiles;
 
-  /// Only the repository name is serialized. Private-release credentials live
-  /// in the current user's Windows Credential Manager, never in this JSON.
-  final String updateRepository;
   final bool checkForUpdatesOnStartup;
   final bool autoInstallUpdates;
 
@@ -201,6 +205,7 @@ class AppSettings {
     this.showNotifications = true,
     this.tunCoreType = TunCoreType.singBox,
     this.tunDnsServer = defaultTunDnsServer,
+    this.tunDnsSecondaryServer = '',
     this.coreLogLevel = CoreLogLevel.warn,
     this.geoipUrl = defaultGeoipUrl,
     this.geositeUrl = defaultGeositeUrl,
@@ -210,7 +215,6 @@ class AppSettings {
     this.onboardingCompleted = false,
     this.activeRoutingPresetId,
     this.homeTiles = defaultHomeTiles,
-    this.updateRepository = defaultUpdateRepository,
     this.checkForUpdatesOnStartup = true,
     this.autoInstallUpdates = false,
   });
@@ -268,6 +272,7 @@ class AppSettings {
       TunCoreType.singBox,
     ),
     tunDnsServer: json['tunDnsServer'] as String? ?? defaultTunDnsServer,
+    tunDnsSecondaryServer: _restoredDnsBackup(json),
     coreLogLevel: _enumFromJson(
       CoreLogLevel.values,
       json['coreLogLevel'],
@@ -288,10 +293,14 @@ class AppSettings {
         : (json['homeTiles'] as List)
               .map((t) => HomeTileConfig.fromJson(t as Map<String, dynamic>))
               .toList(),
-    updateRepository:
-        json['updateRepository'] as String? ?? defaultUpdateRepository,
+    // Legacy updateRepository/token fields are deliberately ignored. Public
+    // updates are pinned by the build, not configurable through this JSON.
     checkForUpdatesOnStartup: json['checkForUpdatesOnStartup'] as bool? ?? true,
-    autoInstallUpdates: json['autoInstallUpdates'] as bool? ?? false,
+    // A saved opt-in is valid only for the publisher the user approved. In
+    // older releases that identity was updateRepository; it is no longer an
+    // editable setting. A different build-time publisher requires new consent.
+    autoInstallUpdates:
+        json['autoInstallUpdates'] == true && _updateConsentMatches(json),
   );
 
   Map<String, dynamic> toJson() => {
@@ -310,6 +319,8 @@ class AppSettings {
     'showNotifications': showNotifications,
     'tunCoreType': tunCoreType.name,
     'tunDnsServer': tunDnsServer,
+    if (tunDnsSecondaryServer.isNotEmpty)
+      'tunDnsSecondaryServer': tunDnsSecondaryServer,
     'coreLogLevel': coreLogLevel.name,
     'geoipUrl': geoipUrl,
     'geositeUrl': geositeUrl,
@@ -321,9 +332,9 @@ class AppSettings {
     if (activeRoutingPresetId != null)
       'activeRoutingPresetId': activeRoutingPresetId,
     'homeTiles': homeTiles.map((t) => t.toJson()).toList(),
-    'updateRepository': updateRepository,
     'checkForUpdatesOnStartup': checkForUpdatesOnStartup,
     'autoInstallUpdates': autoInstallUpdates,
+    'autoInstallUpdateOrigin': defaultUpdateRepository,
   };
 
   AppSettings copyWith({
@@ -342,6 +353,7 @@ class AppSettings {
     bool? showNotifications,
     TunCoreType? tunCoreType,
     String? tunDnsServer,
+    String? tunDnsSecondaryServer,
     CoreLogLevel? coreLogLevel,
     String? geoipUrl,
     String? geositeUrl,
@@ -360,7 +372,6 @@ class AppSettings {
     // менять" — см. `settings_page.dart`.
     bool clearActiveRoutingPresetId = false,
     List<HomeTileConfig>? homeTiles,
-    String? updateRepository,
     bool? checkForUpdatesOnStartup,
     bool? autoInstallUpdates,
   }) {
@@ -381,6 +392,11 @@ class AppSettings {
       showNotifications: showNotifications ?? this.showNotifications,
       tunCoreType: tunCoreType ?? this.tunCoreType,
       tunDnsServer: tunDnsServer ?? this.tunDnsServer,
+      tunDnsSecondaryServer:
+          tunDnsSecondaryServer ??
+          (tunDnsServer != null && tunDnsServer != this.tunDnsServer
+              ? ''
+              : this.tunDnsSecondaryServer),
       coreLogLevel: coreLogLevel ?? this.coreLogLevel,
       geoipUrl: geoipUrl ?? this.geoipUrl,
       geositeUrl: geositeUrl ?? this.geositeUrl,
@@ -396,12 +412,27 @@ class AppSettings {
           ? null
           : (activeRoutingPresetId ?? this.activeRoutingPresetId),
       homeTiles: homeTiles ?? this.homeTiles,
-      updateRepository: updateRepository ?? this.updateRepository,
       checkForUpdatesOnStartup:
           checkForUpdatesOnStartup ?? this.checkForUpdatesOnStartup,
       autoInstallUpdates: autoInstallUpdates ?? this.autoInstallUpdates,
     );
   }
+}
+
+bool _updateConsentMatches(Map<String, dynamic> json) {
+  final origin = json['autoInstallUpdateOrigin'] ?? json['updateRepository'];
+  return origin is String &&
+      origin.trim().toLowerCase() == defaultUpdateRepository.toLowerCase();
+}
+
+String _restoredDnsBackup(Map<String, dynamic> json) {
+  final primary = json['tunDnsServer'] ?? defaultTunDnsServer;
+  final secondary = json['tunDnsSecondaryServer'];
+  return primary is String &&
+          secondary is String &&
+          dnsAddressesShareProvider(primary, secondary)
+      ? secondary
+      : '';
 }
 
 T _enumFromJson<T extends Enum>(List<T> values, Object? raw, T fallback) {

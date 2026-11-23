@@ -140,3 +140,12 @@ install(FILES
   "${SINGBOX_ASSET_DIR}/SOURCE.md"
   DESTINATION "${CMAKE_INSTALL_PREFIX}/assets/sing-box"
   COMPONENT Runtime)
+
+# Preserve application attribution and the original globe texture license in
+# both the installer and portable bundle, not just the public source tree.
+install(FILES "${CMAKE_SOURCE_DIR}/../THIRD_PARTY_NOTICES.md"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
+install(FILES "${CMAKE_SOURCE_DIR}/../assets/globe/NOTICE.md"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/assets/globe" COMPONENT Runtime)
+install(FILES "${CMAKE_SOURCE_DIR}/../licenses/GPL-3.0.txt"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}/licenses" COMPONENT Runtime)

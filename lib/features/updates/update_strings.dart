@@ -6,32 +6,17 @@ import 'github_release.dart';
 class UpdateStrings {
   static bool get _en => AppLocale.effective == AppLanguage.en;
   static String get title => _en ? 'Updates' : 'Обновления';
-  static String get configure => _en ? 'Configure GitHub' : 'Настроить GitHub';
-  static String get repository => _en ? 'Repository' : 'Репозиторий';
-  static String get notConfigured =>
-      _en ? 'Repository not configured' : 'Репозиторий не настроен';
-  static String get token =>
-      _en ? 'Read-only GitHub token' : 'Read-only токен GitHub';
-  static String get tokenPlaceholder => _en
-      ? 'Leave blank to keep the saved token'
-      : 'Оставьте пустым, чтобы сохранить прежний токен';
-  static String get tokenSaved => _en
-      ? 'Private-release access: token saved in Windows'
-      : 'Доступ к приватным релизам: токен сохранён в Windows';
-  static String get tokenNotSaved => _en
-      ? 'No token saved (public releases only)'
-      : 'Токен не сохранён (только публичные релизы)';
-  static String get tokenHelp => _en
-      ? 'For a private repository, create a fine-grained personal access token in GitHub Settings → Developer settings. Select only this repository and Contents: Read-only. Never use your publishing token here. The token is stored in your Windows Credential Manager, not in the app settings or binary.'
-      : 'Для приватного репозитория создайте fine-grained personal access token в GitHub Settings → Developer settings. Выберите только этот репозиторий и Contents: Read-only. Не используйте здесь токен для публикации. Токен хранится в Диспетчере учётных данных Windows, а не в настройках или сборке приложения.';
-  static String get removeToken =>
-      _en ? 'Delete saved token' : 'Удалить сохранённый токен';
+  static String get publicAccess => _en
+      ? 'Updates are available to everyone — no account or token required.'
+      : 'Обновления доступны всем — без аккаунта и токена.';
+  static String get notConfigured => _en
+      ? 'The update source is unavailable in this build.'
+      : 'Источник обновлений недоступен в этой сборке.';
   static String get save => _en ? 'Save' : 'Сохранить';
-  static String get saving =>
-      _en ? 'Saving update settings…' : 'Сохраняю настройки обновления…';
   static String get cancel => _en ? 'Cancel' : 'Отмена';
   static String get check => _en ? 'Check for updates' : 'Проверить обновления';
-  static String get checking => _en ? 'Checking GitHub…' : 'Проверяю GitHub…';
+  static String get checking =>
+      _en ? 'Checking for updates…' : 'Проверяю обновления…';
   static String get upToDate =>
       _en ? 'You have the latest version' : 'Установлена последняя версия';
   static String available(String version) =>
@@ -60,8 +45,8 @@ class UpdateStrings {
       ? 'Opt-in only. The app restarts when VPN is off; installation is deferred during an active connection. Updating an elevated app is blocked: restart it without administrator privileges first.'
       : 'Только с вашего согласия. Приложение перезапустится, когда VPN выключен; при активном соединении установка откладывается. Обновление с повышенными правами заблокировано: сначала перезапустите приложение без прав администратора.';
   static String get integrityHelp => _en
-      ? 'Only stable GitHub Releases with a matching Windows installer and GitHub SHA-256 digest are accepted. A checksum proves file integrity, not that the publisher or executable is trustworthy.'
-      : 'Принимаются только стабильные GitHub Releases с Windows-установщиком и SHA-256 от GitHub. Контрольная сумма подтверждает целостность файла, но не добросовестность издателя или безопасность программы.';
+      ? 'Only stable releases with a matching Windows installer and a verified SHA-256 digest are accepted. A checksum proves file integrity, not publisher or executable trust.'
+      : 'Принимаются только стабильные релизы с Windows-установщиком и проверенной SHA-256. Контрольная сумма подтверждает целостность файла, но не добросовестность издателя или безопасность программы.';
   static String get releaseNotes =>
       _en ? 'Release notes' : 'Изменения в релизе';
 
@@ -73,24 +58,24 @@ class UpdateStrings {
     UpdateFailure.repositoryNotConfigured => notConfigured,
     UpdateFailure.invalidRepository =>
       _en
-          ? 'Enter owner/repository or its HTTPS GitHub URL.'
-          : 'Укажите owner/repository или HTTPS-ссылку на GitHub.',
+          ? 'The update source in this build is invalid.'
+          : 'Некорректный источник обновлений в этой сборке.',
     UpdateFailure.accessDenied =>
       _en
-          ? 'GitHub access denied. Check token permissions and expiration.'
-          : 'GitHub отказал в доступе. Проверьте права и срок действия токена.',
+          ? 'The update server denied access. Try again later.'
+          : 'Сервер обновлений отказал в доступе. Повторите позже.',
     UpdateFailure.noRelease =>
       _en
-          ? 'No release found, or the private repository is not accessible with this token.'
-          : 'Релиз не найден, либо токен не даёт доступа к приватному репозиторию.',
+          ? 'No public Windows release was found.'
+          : 'Публичный Windows-релиз не найден.',
     UpdateFailure.rateLimited =>
       _en
-          ? 'GitHub request limit reached. Try again later.'
-          : 'Исчерпан лимит запросов GitHub. Повторите позже.',
+          ? 'The update server request limit was reached. Try again later.'
+          : 'Исчерпан лимит запросов сервера обновлений. Повторите позже.',
     UpdateFailure.network =>
       _en
-          ? 'Could not reach GitHub or download the update.'
-          : 'Не удалось связаться с GitHub или скачать обновление.',
+          ? 'Could not reach the update server or download the update.'
+          : 'Не удалось связаться с сервером обновлений или скачать обновление.',
     UpdateFailure.invalidRelease =>
       _en
           ? 'The release or downloaded file has an unexpected format.'
@@ -101,8 +86,8 @@ class UpdateStrings {
           : 'В релизе нет подходящего Windows-установщика NN4K.',
     UpdateFailure.missingChecksum =>
       _en
-          ? 'GitHub did not provide a SHA-256 digest. Installation is blocked.'
-          : 'GitHub не предоставил SHA-256. Установка заблокирована.',
+          ? 'The update server did not provide a SHA-256 digest. Installation is blocked.'
+          : 'Сервер обновлений не предоставил SHA-256. Установка заблокирована.',
     UpdateFailure.checksumMismatch =>
       _en
           ? 'SHA-256 mismatch. The file will not be executed.'

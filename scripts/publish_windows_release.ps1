@@ -1,6 +1,7 @@
 #Requires -Version 5
 param(
     [Parameter(Mandatory = $true)][ValidatePattern('^[a-zA-Z0-9-]+/[a-zA-Z0-9_.-]+$')][string]$Repository,
+    [Parameter(Mandatory = $true)][ValidateRange(1, [long]::MaxValue)][long]$ExpectedRepositoryId,
     [Parameter(Mandatory = $true)][ValidatePattern('^[0-9]+\.[0-9]+\.[0-9]+$')][string]$Version,
     [Parameter(Mandatory = $true)][string]$ArtifactDirectory,
     [Parameter(Mandatory = $true)][ValidatePattern('^[a-fA-F0-9]{40}$')][string]$TargetCommit,
@@ -44,10 +45,17 @@ function Get-DraftReleaseId($Draft) {
     return $id
 }
 
-$repositoryInfo = Invoke-GitHubJson -Arguments @('api', "repos/$Repository", '--jq', '{id: .id, private: .private, full_name: .full_name}')
-if (-not $repositoryInfo.private -or $repositoryInfo.full_name.ToLowerInvariant() -ne $Repository.ToLowerInvariant()) {
-    throw 'Publication is restricted to the exact requested private repository.'
+function Get-VerifiedPublicRepository {
+    $info = Invoke-GitHubJson -Arguments @('api', "repos/$Repository", '--jq', '{id: .id, private: .private, full_name: .full_name}')
+    $id = 0L
+    if ($info.private -isnot [bool] -or $info.private -or
+        $info.full_name -isnot [string] -or $info.full_name.ToLowerInvariant() -cne $Repository.ToLowerInvariant() -or
+        -not [long]::TryParse([string]$info.id, [ref]$id) -or $id -ne $ExpectedRepositoryId) {
+        throw 'Publication is restricted to the exact requested public repository and its pinned numeric identity.'
+    }
+    return $info
 }
+$repositoryInfo = Get-VerifiedPublicRepository
 $repositoryId = $repositoryInfo.id
 $files = @(
     (Join-Path $ArtifactDirectory "NN4KSetup-$Version.exe"),
@@ -94,22 +102,48 @@ This package targets an **x64 Windows OS**, not 32-bit Windows or ARM64 emulatio
 The original first-run setup and appearance preferences are preserved.
 
 ### In-app updates
-Open Settings → About → Updates. Private repositories require your own fine-grained
-GitHub token with access to this repository and **Contents: Read-only**. The token
-is stored in Windows Credential Manager, not in the executable or settings JSON.
+Open Settings → About → Updates and click Check. Downloads are public: no account,
+GitHub setup or token is needed. The update publisher is pinned in this build,
+not selected by imported settings.
 Automatic download/installation is opt-in and is deferred while VPN is active.
 The update path is designed to preserve existing servers/settings, verify the
 installer SHA-256, stop owned engines, install in place and restart. End-to-end
 upgrading to a genuinely newer release still requires a separate installation test.
 
+### What's new
+- DNS diagnostics under Ping: consent, sequential reachability/latency checks,
+  automatic selection of a reliable encrypted primary/backup pair, and saved
+  settings. Cancellation or no working pair preserves the previous DNS choice.
+- Repaired the bottom-right tools menu and its controls, including keyboard and
+  small-window use. All six tools are local playful demos, not network games,
+  a microphone recorder or an online video player.
+- Simplified update settings: removed repository/token configuration and source
+  identity from the application interface.
+
 Builds are not Authenticode-signed unless the owner adds signing separately.
 A checksum confirms integrity; it is not an antivirus or publisher-trust guarantee.
 Live Proxy/TUN and end-to-end upgrading are not certified by this release.
-The upstream application's licensing remains unresolved; keep this repository
-private and clarify redistribution rights with the original author.
+Third-party licenses and attribution remain included with the application.
+
+### Component source and licenses
+- Unmodified sing-box __SING_BOX_VERSION__ (GPL v3 or later):
+  [corresponding tagged source and build recipes](https://github.com/SagerNet/sing-box/tree/__SING_BOX_VERSION__),
+  [source archive](https://github.com/SagerNet/sing-box/archive/refs/tags/__SING_BOX_VERSION__.tar.gz).
+- Unmodified Xray-core __XRAY_VERSION__ (MPL 2.0):
+  [corresponding tagged source and build recipes](https://github.com/XTLS/Xray-core/tree/__XRAY_VERSION__),
+  [source archive](https://github.com/XTLS/Xray-core/archive/refs/tags/__XRAY_VERSION__.tar.gz).
+The packages include original core notices, full GPL/MPL terms, Wintun terms,
+Inter's SIL license and original application/globe attribution. See
+`THIRD_PARTY_NOTICES.md` inside either package; source links above are provided
+at no charge independently of downloading the installer.
 '@
 $notesFile = Join-Path $ArtifactDirectory 'release-notes.md'
-[IO.File]::WriteAllText($notesFile, $notesTemplate.Replace('__VERSION__', $Version), [Text.UTF8Encoding]::new($false))
+$coreVersions = ConvertFrom-StringData ([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'core_versions.env')))
+foreach ($key in @('XRAY_VERSION', 'SING_BOX_VERSION')) {
+    if ($coreVersions[$key] -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') { throw 'Invalid pinned component version for source notices.' }
+}
+$notes = $notesTemplate.Replace('__VERSION__', $Version).Replace('__XRAY_VERSION__', $coreVersions.XRAY_VERSION).Replace('__SING_BOX_VERSION__', $coreVersions.SING_BOX_VERSION)
+[IO.File]::WriteAllText($notesFile, $notes, [Text.UTF8Encoding]::new($false))
 if ($null -eq $releaseId) {
     $arguments = @('release', 'create', "v$Version", '--repo', $Repository,
         '--draft', '--title', "NN4K $Version", '--notes-file', $notesFile)
@@ -160,8 +194,8 @@ foreach ($file in $files) {
         throw "GitHub integrity verification failed for $name; the release remains a draft"
     }
 }
-$repositoryInfo = Invoke-GitHubJson -Arguments @('api', "repos/$Repository", '--jq', '{id: .id, private: .private, full_name: .full_name}')
-if (-not $repositoryInfo.private -or $repositoryInfo.id -ne $repositoryId -or $repositoryInfo.full_name.ToLowerInvariant() -ne $Repository.ToLowerInvariant()) { throw 'Repository privacy/identity changed; publication was stopped.' }
+$repositoryInfo = Get-VerifiedPublicRepository
+if ($repositoryInfo.id -ne $repositoryId) { throw 'Repository visibility/identity changed; publication was stopped.' }
 $published = Invoke-GitHub -Arguments @('release', 'edit', "v$Version", '--repo', $Repository, '--draft=false', '--latest', '--title', "NN4K $Version", '--notes-file', $notesFile)
 if ($published.ExitCode -ne 0) { throw 'Could not publish verified draft release' }
 Write-Output "Published: https://github.com/$Repository/releases/tag/v$Version"

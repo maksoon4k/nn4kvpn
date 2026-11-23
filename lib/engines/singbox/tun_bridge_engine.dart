@@ -31,6 +31,7 @@ class TunBridgeEngine implements CoreEngine {
     this.socksPort = 10808,
     this.httpPort = 10809,
     this.upstreamDns = defaultTunDnsServer,
+    this.upstreamDnsSecondary = '',
     this.logLevel = CoreLogLevel.warn,
   });
 
@@ -45,6 +46,7 @@ class TunBridgeEngine implements CoreEngine {
   final int socksPort;
   final int httpPort;
   final String upstreamDns;
+  final String upstreamDnsSecondary;
   final CoreLogLevel logLevel;
 
   late final XrayEngineWindows _xray = XrayEngineWindows(
@@ -127,6 +129,7 @@ class TunBridgeEngine implements CoreEngine {
       additionalServerHosts: endpoints.additionalHosts,
       serverIps: endpoints.ips,
       upstreamDns: upstreamDns,
+      upstreamDnsSecondary: upstreamDnsSecondary,
       logLevel: logLevel,
       routingRules: _xray.activeRoutingRules,
       defaultOutboundTag: defaultOutboundTag,

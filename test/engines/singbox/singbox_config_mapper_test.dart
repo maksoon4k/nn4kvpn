@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flux/core_abstraction/app_settings.dart';
+import 'package:flux/core_abstraction/dns_resolver.dart';
 import 'package:flux/core_abstraction/proxy_node.dart';
 import 'package:flux/engines/singbox/singbox_config_mapper.dart';
 
@@ -8,6 +9,7 @@ Map<String, dynamic> buildConfig({
   String serverHost = 'de1.example.com',
   List<String> serverIps = const ['203.0.113.7'],
   String upstreamDns = defaultTunDnsServer,
+  String upstreamDnsSecondary = '',
   CoreLogLevel logLevel = CoreLogLevel.warn,
   List<RoutingRule> routingRules = const [],
   Map<String, String> ruleSetPaths = const {},
@@ -17,6 +19,7 @@ Map<String, dynamic> buildConfig({
   serverHost: serverHost,
   serverIps: serverIps,
   upstreamDns: upstreamDns,
+  upstreamDnsSecondary: upstreamDnsSecondary,
   logLevel: logLevel,
   routingRules: routingRules,
   ruleSetPaths: ruleSetPaths,
@@ -29,48 +32,62 @@ List<Map> routeRules(Map<String, dynamic> config) =>
 // List's `==` is reference equality in Dart, not structural — this compares
 // contents, since route rule values are always freshly-built lists.
 bool _listEquals(Object? a, List<Object?> b) =>
-    a is List && a.length == b.length && [for (var i = 0; i < b.length; i++) a[i] == b[i]].every((x) => x);
+    a is List &&
+    a.length == b.length &&
+    [for (var i = 0; i < b.length; i++) a[i] == b[i]].every((x) => x);
 
 void main() {
-  test('buildSingBoxTunBridgeConfig points the socks outbound at the given port', () {
-    final config = buildConfig(socksInPort: 10808);
+  test(
+    'buildSingBoxTunBridgeConfig points the socks outbound at the given port',
+    () {
+      final config = buildConfig(socksInPort: 10808);
 
-    final outbounds = (config['outbounds'] as List).cast<Map>();
-    final outbound = outbounds.firstWhere((o) => o['type'] == 'socks');
-    expect(outbound['server'], '127.0.0.1');
-    expect(outbound['server_port'], 10808);
+      final outbounds = (config['outbounds'] as List).cast<Map>();
+      final outbound = outbounds.firstWhere((o) => o['type'] == 'socks');
+      expect(outbound['server'], '127.0.0.1');
+      expect(outbound['server_port'], 10808);
 
-    final route = config['route'] as Map;
-    expect(route['final'], outbound['tag']);
-  });
+      final route = config['route'] as Map;
+      expect(route['final'], outbound['tag']);
+    },
+  );
 
-  test('buildSingBoxTunBridgeConfig configures the tun inbound for auto routing', () {
-    final config = buildConfig(socksInPort: 10809);
+  test(
+    'buildSingBoxTunBridgeConfig configures the tun inbound for auto routing',
+    () {
+      final config = buildConfig(socksInPort: 10809);
 
-    final inbound = (config['inbounds'] as List).single as Map;
-    expect(inbound['type'], 'tun');
-    expect(inbound['interface_name'], tunInterfaceName);
-    expect(inbound['auto_route'], isTrue);
-    expect(inbound['address'], contains('172.19.0.1/30'));
-    // IPv4-only address would leave Windows preferring a real IPv6 uplink
-    // over the tunnel per RFC 6724 — see the doc comment in the mapper.
-    expect(
-      (inbound['address'] as List).any((a) => (a as String).contains(':')),
-      isTrue,
-    );
+      final inbound = (config['inbounds'] as List).single as Map;
+      expect(inbound['type'], 'tun');
+      expect(inbound['interface_name'], tunInterfaceName);
+      expect(inbound['auto_route'], isTrue);
+      expect(inbound['address'], contains('172.19.0.1/30'));
+      // IPv4-only address would leave Windows preferring a real IPv6 uplink
+      // over the tunnel per RFC 6724 — see the doc comment in the mapper.
+      expect(
+        (inbound['address'] as List).any((a) => (a as String).contains(':')),
+        isTrue,
+      );
 
-    final route = config['route'] as Map;
-    expect(route['auto_detect_interface'], isTrue);
-  });
+      final route = config['route'] as Map;
+      expect(route['auto_detect_interface'], isTrue);
+    },
+  );
 
   // Сниффинг обязан быть отдельным правилом, а не полем `sniff` на inbound:
   // sing-box 1.13 на legacy-поле падает при старте, ещё не подняв TUN.
-  test('buildSingBoxTunBridgeConfig sniffs via a rule action, never on the inbound', () {
-    final config = buildConfig();
+  test(
+    'buildSingBoxTunBridgeConfig sniffs via a rule action, never on the inbound',
+    () {
+      final config = buildConfig();
 
-    expect((config['inbounds'] as List).single as Map, isNot(contains('sniff')));
-    expect(routeRules(config).any((r) => r['action'] == 'sniff'), isTrue);
-  });
+      expect(
+        (config['inbounds'] as List).single as Map,
+        isNot(contains('sniff')),
+      );
+      expect(routeRules(config).any((r) => r['action'] == 'sniff'), isTrue);
+    },
+  );
 
   // sing-box и xray называют уровни по-разному (`warn` против `warning`), и
   // перепутанное имя роняет ядро на старте, а не пишется молча в лог.
@@ -113,40 +130,50 @@ void main() {
     );
   });
 
-  test('buildSingBoxTunBridgeConfig hijacks DNS by port, not by sniffed protocol', () {
-    final rules = routeRules(buildConfig());
-    final hijack = rules.firstWhere((r) => r['action'] == 'hijack-dns');
+  test(
+    'buildSingBoxTunBridgeConfig hijacks DNS by port, not by sniffed protocol',
+    () {
+      final rules = routeRules(buildConfig());
+      final hijack = rules.firstWhere((r) => r['action'] == 'hijack-dns');
 
-    // По `protocol: dns` сниффер тащит сюда ещё и LLMNR/mDNS/NetBIOS-NS, а те
-    // не разбираются DNS-парсером и заваливают лог `bad question name`.
-    expect(hijack['port'], 53);
-    expect(hijack, isNot(contains('protocol')));
+      // По `protocol: dns` сниффер тащит сюда ещё и LLMNR/mDNS/NetBIOS-NS, а те
+      // не разбираются DNS-парсером и заваливают лог `bad question name`.
+      expect(hijack['port'], 53);
+      expect(hijack, isNot(contains('protocol')));
 
-    // Мультикаст и бродкаст должны отсекаться раньше хиджека — иначе они до
-    // него доходят по тому же порту.
-    final rejectIndex = rules.indexWhere((r) => r['action'] == 'reject');
-    expect(rejectIndex, isNonNegative);
-    expect(rejectIndex, lessThan(rules.indexOf(hijack)));
-    expect(rules[rejectIndex]['ip_cidr'], contains('224.0.0.0/4'));
-  });
+      // Мультикаст и бродкаст должны отсекаться раньше хиджека — иначе они до
+      // него доходят по тому же порту.
+      final rejectIndex = rules.indexWhere((r) => r['action'] == 'reject');
+      expect(rejectIndex, isNonNegative);
+      expect(rejectIndex, lessThan(rules.indexOf(hijack)));
+      expect(rules[rejectIndex]['ip_cidr'], contains('224.0.0.0/4'));
+    },
+  );
 
   group('bypass for xray\'s own traffic', () {
-    test('resolves the server host through a DNS server that skips the tunnel', () {
-      final config = buildConfig(serverHost: 'de1.example.com');
+    test(
+      'resolves the server host through a DNS server that skips the tunnel',
+      () {
+        final config = buildConfig(serverHost: 'de1.example.com');
 
-      final dns = config['dns'] as Map;
-      final servers = (dns['servers'] as List).cast<Map>();
-      final rule = (dns['rules'] as List).cast<Map>().single;
+        final dns = config['dns'] as Map;
+        final servers = (dns['servers'] as List).cast<Map>();
+        final rule = (dns['rules'] as List).cast<Map>().single;
 
-      expect(rule['domain'], ['de1.example.com']);
-      final bootstrap = servers.firstWhere((s) => s['tag'] == rule['server']);
-      // Уйди этот резолв в xray — получился бы замкнутый круг: xray'ю нужен
-      // тоннель, чтобы отрезолвить адрес сервера, к которому он подключается.
-      // Отсутствие `detour` и есть «напрямую»; написать `detour: direct` явно
-      // нельзя — на таком sing-box 1.13 падает при старте.
-      expect(bootstrap, isNot(contains('detour')));
-      expect(bootstrap['type'], 'tls', reason: 'DNS мимо тоннеля — только DoT');
-    });
+        expect(rule['domain'], ['de1.example.com']);
+        final bootstrap = servers.firstWhere((s) => s['tag'] == rule['server']);
+        // Уйди этот резолв в xray — получился бы замкнутый круг: xray'ю нужен
+        // тоннель, чтобы отрезолвить адрес сервера, к которому он подключается.
+        // Отсутствие `detour` и есть «напрямую»; написать `detour: direct` явно
+        // нельзя — на таком sing-box 1.13 падает при старте.
+        expect(bootstrap, isNot(contains('detour')));
+        expect(
+          bootstrap['type'],
+          'tls',
+          reason: 'DNS мимо тоннеля — только DoT',
+        );
+      },
+    );
 
     test('keeps traffic on IPv4 while still capturing IPv6', () {
       final config = buildConfig();
@@ -180,21 +207,28 @@ void main() {
       expect(remote['detour'], 'xray-socks-out');
     });
 
-    test('keeps the server address out of the tunnel at the routing-table level', () {
-      final config = buildConfig(serverIps: const ['203.0.113.7', '2001:db8::1']);
+    test(
+      'keeps the server address out of the tunnel at the routing-table level',
+      () {
+        final config = buildConfig(
+          serverIps: const ['203.0.113.7', '2001:db8::1'],
+        );
 
-      // Хайрпин «в TUN и сразу обратно наружу» формально работает, но гонит весь
-      // трафик тоннеля через userspace-стек дважды — страницы грузились по 30-40
-      // секунд. Пакеты xray к серверу не должны попадать в TUN вообще.
-      final inbound = (config['inbounds'] as List).single as Map;
-      expect(
-        inbound['route_exclude_address'],
-        containsAll(['203.0.113.7/32', '2001:db8::1/128']),
-      );
-    });
+        // Хайрпин «в TUN и сразу обратно наружу» формально работает, но гонит весь
+        // трафик тоннеля через userspace-стек дважды — страницы грузились по 30-40
+        // секунд. Пакеты xray к серверу не должны попадать в TUN вообще.
+        final inbound = (config['inbounds'] as List).single as Map;
+        expect(
+          inbound['route_exclude_address'],
+          containsAll(['203.0.113.7/32', '2001:db8::1/128']),
+        );
+      },
+    );
 
     test('routes the pinned server IPs direct as a fallback', () {
-      final config = buildConfig(serverIps: const ['203.0.113.7', '2001:db8::1']);
+      final config = buildConfig(
+        serverIps: const ['203.0.113.7', '2001:db8::1'],
+      );
 
       final direct = routeRules(config).where((r) => r['outbound'] == 'direct');
       // Голый адрес без префикса sing-box в `ip_cidr` не принимает.
@@ -238,6 +272,132 @@ void main() {
     });
   });
 
+  group('measured encrypted DNS primary/backup', () {
+    test('both provider addresses use explicit certificate/SNI identities', () {
+      for (final pair in diagnosticDnsPairs) {
+        final config = buildConfig(
+          upstreamDns: pair.primary,
+          upstreamDnsSecondary: pair.secondary,
+        );
+        final dns = config['dns'] as Map;
+        final servers = (dns['servers'] as List).cast<Map>();
+        expect(servers.map((server) => server['tag']), [
+          'remote',
+          'remote-backup',
+          'bootstrap',
+          'bootstrap-backup',
+        ]);
+        for (final server in servers) {
+          expect(server['type'], 'tls');
+          expect((server['tls'] as Map)['enabled'], true);
+          expect((server['tls'] as Map)['server_name'], pair.tlsServerName);
+          expect(server, isNot(contains('insecure')));
+          expect(server['tls'], isNot(contains('insecure')));
+          if ((server['tag'] as String).startsWith('remote')) {
+            expect(server['detour'], 'xray-socks-out');
+          } else {
+            expect(server, isNot(contains('detour')));
+          }
+        }
+        expect(dns['final'], 'remote');
+      }
+    });
+
+    test(
+      'failover is sequential, bounded and never routes ordinary DNS direct',
+      () {
+        final config = buildConfig(
+          upstreamDns: '1.0.0.1',
+          upstreamDnsSecondary: '1.1.1.1',
+        );
+        final rules = ((config['dns'] as Map)['rules'] as List).cast<Map>();
+        expect(rules, hasLength(8));
+        for (final start in [0, 4]) {
+          final tag = start == 0 ? 'bootstrap' : 'remote';
+          expect(rules[start]['action'], 'evaluate');
+          expect(rules[start]['server'], tag);
+          expect(rules[start]['timeout'], '2s');
+          expect(rules[start]['tag'], '$tag-primary');
+          for (final respond in rules.sublist(start + 1, start + 3)) {
+            expect(respond['action'], 'respond');
+            expect(respond['match_response'], '$tag-primary');
+            expect([
+              'NOERROR',
+              'NXDOMAIN',
+            ], contains(respond['response_rcode']));
+            expect(respond, isNot(contains('server')));
+          }
+          expect(rules[start + 3]['server'], '$tag-backup');
+          expect(rules[start + 3]['timeout'], '2s');
+        }
+        expect(
+          rules
+              .take(4)
+              .every(
+                (rule) => _listEquals(rule['domain'], ['de1.example.com']),
+              ),
+          true,
+        );
+        expect(
+          rules.skip(4).every((rule) => !rule.containsKey('domain')),
+          true,
+        );
+        expect(
+          rules.any(
+            (rule) =>
+                rule.containsKey('race') || rule.containsKey('speculative'),
+          ),
+          false,
+        );
+      },
+    );
+
+    test(
+      'valid negative replies are retained instead of bypassing provider policy',
+      () {
+        final rules =
+            ((buildConfig(
+                          upstreamDns: '9.9.9.9',
+                          upstreamDnsSecondary: '149.112.112.112',
+                        )['dns']
+                        as Map)['rules']
+                    as List)
+                .cast<Map>();
+        expect(
+          rules.where((rule) => rule['response_rcode'] == 'NXDOMAIN').length,
+          2,
+        );
+        expect(
+          rules.where((rule) => rule['response_rcode'] == 'NOERROR').length,
+          2,
+        );
+        expect(rules.any((rule) => rule['response_rcode'] == 'REFUSED'), false);
+        expect(
+          rules.any((rule) => rule['response_rcode'] == 'SERVFAIL'),
+          false,
+        );
+      },
+    );
+
+    test(
+      'single/custom DNS stays TLS-verified and has no invented failover',
+      () {
+        final config = buildConfig(upstreamDns: '192.0.2.2');
+        final dns = config['dns'] as Map;
+        expect(dns['servers'], hasLength(2));
+        expect(dns['rules'], hasLength(1));
+        expect(((dns['servers'] as List).first as Map)['tls'], {
+          'enabled': true,
+        });
+        final duplicate = buildConfig(
+          upstreamDns: '1.1.1.1',
+          upstreamDnsSecondary: '1.1.1.1',
+        );
+        expect((duplicate['dns'] as Map)['servers'], hasLength(2));
+      },
+    );
+  });
+
   group('user routing rules (ServerLeaf.routingRules, трек 21)', () {
     test('come after all infrastructure rules', () {
       final config = buildConfig(
@@ -263,15 +423,20 @@ void main() {
       final config = buildConfig(
         routingRules: const [
           DomainRule(
-            values: ['bare.example', 'domain:sub.example.com', 'full:exact.example.com', 'regexp:^ad'],
+            values: [
+              'bare.example',
+              'domain:sub.example.com',
+              'full:exact.example.com',
+              'regexp:^ad',
+            ],
             outboundTag: 'direct',
           ),
         ],
       );
 
-      final rule = routeRules(
-        config,
-      ).firstWhere((r) => r['outbound'] == 'direct' && r.containsKey('domain_keyword'));
+      final rule = routeRules(config).firstWhere(
+        (r) => r['outbound'] == 'direct' && r.containsKey('domain_keyword'),
+      );
       expect(rule['domain_keyword'], ['bare.example']);
       expect(rule['domain_suffix'], ['sub.example.com']);
       expect(rule['domain'], ['exact.example.com']);
@@ -292,15 +457,24 @@ void main() {
         );
 
         final rules = routeRules(config);
-        final direct = rules.firstWhere((r) => _listEquals(r['domain_keyword'], ['direct.example']));
+        final direct = rules.firstWhere(
+          (r) => _listEquals(r['domain_keyword'], ['direct.example']),
+        );
         expect(direct['outbound'], 'direct');
         expect(direct.containsKey('action'), isFalse);
 
-        final blocked = rules.firstWhere((r) => _listEquals(r['domain_keyword'], ['blocked.example']));
+        final blocked = rules.firstWhere(
+          (r) => _listEquals(r['domain_keyword'], ['blocked.example']),
+        );
         expect(blocked['action'], 'reject');
         expect(blocked.containsKey('outbound'), isFalse);
 
-        expect(rules.any((r) => _listEquals(r['domain_keyword'], ['proxied.example'])), isFalse);
+        expect(
+          rules.any(
+            (r) => _listEquals(r['domain_keyword'], ['proxied.example']),
+          ),
+          isFalse,
+        );
       },
     );
 
@@ -310,85 +484,114 @@ void main() {
     // silently dropped every "→ proxy" rule whenever the preset's default
     // was direct/block — exactly the opposite of what such a preset needs
     // (e.g. "everything direct, except these domains through the tunnel").
-    test('keeps a "proxy" rule when the default outbound is NOT proxy, mapped to xray-socks-out', () {
-      final config = buildConfig(
-        defaultOutboundTag: 'direct',
-        routingRules: const [
-          DomainRule(values: ['proxied.example'], outboundTag: 'proxy'),
-        ],
-      );
+    test(
+      'keeps a "proxy" rule when the default outbound is NOT proxy, mapped to xray-socks-out',
+      () {
+        final config = buildConfig(
+          defaultOutboundTag: 'direct',
+          routingRules: const [
+            DomainRule(values: ['proxied.example'], outboundTag: 'proxy'),
+          ],
+        );
 
-      final rules = routeRules(config);
-      final proxied = rules.firstWhere((r) => _listEquals(r['domain_keyword'], ['proxied.example']));
-      expect(proxied['outbound'], 'xray-socks-out');
-      expect((config['route'] as Map)['final'], 'direct');
-    });
+        final rules = routeRules(config);
+        final proxied = rules.firstWhere(
+          (r) => _listEquals(r['domain_keyword'], ['proxied.example']),
+        );
+        expect(proxied['outbound'], 'xray-socks-out');
+        expect((config['route'] as Map)['final'], 'direct');
+      },
+    );
 
-    test('IpRule maps ip_cidr values and skips "proxy" when it matches the default', () {
-      final config = buildConfig(
-        routingRules: const [
-          IpRule(values: ['1.2.3.0/24'], outboundTag: 'direct'),
-          IpRule(values: ['4.5.6.0/24'], outboundTag: 'proxy'),
-        ],
-      );
+    test(
+      'IpRule maps ip_cidr values and skips "proxy" when it matches the default',
+      () {
+        final config = buildConfig(
+          routingRules: const [
+            IpRule(values: ['1.2.3.0/24'], outboundTag: 'direct'),
+            IpRule(values: ['4.5.6.0/24'], outboundTag: 'proxy'),
+          ],
+        );
 
-      final rules = routeRules(config);
-      expect(
-        rules.any((r) => _listEquals(r['ip_cidr'], ['1.2.3.0/24']) && r['outbound'] == 'direct'),
-        isTrue,
-      );
-      expect(rules.any((r) => _listEquals(r['ip_cidr'], ['4.5.6.0/24'])), isFalse);
-    });
+        final rules = routeRules(config);
+        expect(
+          rules.any(
+            (r) =>
+                _listEquals(r['ip_cidr'], ['1.2.3.0/24']) &&
+                r['outbound'] == 'direct',
+          ),
+          isTrue,
+        );
+        expect(
+          rules.any((r) => _listEquals(r['ip_cidr'], ['4.5.6.0/24'])),
+          isFalse,
+        );
+      },
+    );
 
-    test('geosite:/geoip: values become rule_set references, not domain/ip_cidr', () {
-      final config = buildConfig(
-        routingRules: const [
-          DomainRule(values: ['geosite:category-ads'], outboundTag: 'block'),
-          IpRule(values: ['geoip:cn'], outboundTag: 'direct'),
-        ],
-        ruleSetPaths: const {
-          'geosite-category-ads': 'C:/geo/geosite-category-ads.json',
-          'geoip-cn': 'C:/geo/geoip-cn.json',
-        },
-      );
+    test(
+      'geosite:/geoip: values become rule_set references, not domain/ip_cidr',
+      () {
+        final config = buildConfig(
+          routingRules: const [
+            DomainRule(values: ['geosite:category-ads'], outboundTag: 'block'),
+            IpRule(values: ['geoip:cn'], outboundTag: 'direct'),
+          ],
+          ruleSetPaths: const {
+            'geosite-category-ads': 'C:/geo/geosite-category-ads.json',
+            'geoip-cn': 'C:/geo/geoip-cn.json',
+          },
+        );
 
-      final rules = routeRules(config);
-      final domainRule = rules.firstWhere(
-        (r) => _listEquals(r['rule_set'], ['geosite-category-ads']),
-      );
-      expect(domainRule['action'], 'reject');
-      expect(domainRule.containsKey('domain'), isFalse);
-      expect(domainRule.containsKey('domain_keyword'), isFalse);
+        final rules = routeRules(config);
+        final domainRule = rules.firstWhere(
+          (r) => _listEquals(r['rule_set'], ['geosite-category-ads']),
+        );
+        expect(domainRule['action'], 'reject');
+        expect(domainRule.containsKey('domain'), isFalse);
+        expect(domainRule.containsKey('domain_keyword'), isFalse);
 
-      final ipRule = rules.firstWhere((r) => _listEquals(r['rule_set'], ['geoip-cn']));
-      expect(ipRule['outbound'], 'direct');
-      expect(ipRule.containsKey('ip_cidr'), isFalse);
+        final ipRule = rules.firstWhere(
+          (r) => _listEquals(r['rule_set'], ['geoip-cn']),
+        );
+        expect(ipRule['outbound'], 'direct');
+        expect(ipRule.containsKey('ip_cidr'), isFalse);
 
-      final ruleSets = (config['route'] as Map)['rule_set'] as List;
-      expect(ruleSets, hasLength(2));
-      final ruleSetsByTag = {
-        for (final rs in ruleSets.cast<Map>()) rs['tag'] as String: rs,
-      };
-      expect(ruleSetsByTag['geosite-category-ads']!['path'], 'C:/geo/geosite-category-ads.json');
-      expect(ruleSetsByTag['geosite-category-ads']!['format'], 'source');
-      expect(ruleSetsByTag['geoip-cn']!['path'], 'C:/geo/geoip-cn.json');
-    });
+        final ruleSets = (config['route'] as Map)['rule_set'] as List;
+        expect(ruleSets, hasLength(2));
+        final ruleSetsByTag = {
+          for (final rs in ruleSets.cast<Map>()) rs['tag'] as String: rs,
+        };
+        expect(
+          ruleSetsByTag['geosite-category-ads']!['path'],
+          'C:/geo/geosite-category-ads.json',
+        );
+        expect(ruleSetsByTag['geosite-category-ads']!['format'], 'source');
+        expect(ruleSetsByTag['geoip-cn']!['path'], 'C:/geo/geoip-cn.json');
+      },
+    );
 
     test('geoRuleSetReferences collects unique tags across rules', () {
       final tags = geoRuleSetReferences(const [
-        DomainRule(values: ['geosite:ads', 'geosite:ads', 'plain.example'], outboundTag: 'direct'),
+        DomainRule(
+          values: ['geosite:ads', 'geosite:ads', 'plain.example'],
+          outboundTag: 'direct',
+        ),
         IpRule(values: ['geoip:cn'], outboundTag: 'block'),
       ]);
       expect(tags, {'geosite-ads', 'geoip-cn'});
     });
 
-    test('omits route.rule_set entirely when no geosite/geoip references exist', () {
-      final config = buildConfig(
-        routingRules: const [
-          DomainRule(values: ['plain.example'], outboundTag: 'direct'),
-        ],
-      );
-      expect((config['route'] as Map).containsKey('rule_set'), isFalse);
-    });
+    test(
+      'omits route.rule_set entirely when no geosite/geoip references exist',
+      () {
+        final config = buildConfig(
+          routingRules: const [
+            DomainRule(values: ['plain.example'], outboundTag: 'direct'),
+          ],
+        );
+        expect((config['route'] as Map).containsKey('rule_set'), isFalse);
+      },
+    );
   });
 }

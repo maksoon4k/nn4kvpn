@@ -42,8 +42,15 @@ code is not covered by the Windows release or the current audit.
 - **Auto-pick-best-server.** Ping every server (through the proxy, raw TCP,
   or ICMP) and let Flux pick the lowest-latency one instead of guessing.
 - **In-app Windows updates.** Check, download and install from this fork's
-  GitHub Releases. Private-release credentials stay in Windows Credential
-  Manager. Automatic installation is opt-in and waits until VPN is idle.
+  public releases without an account, repository setup or token. The publisher
+  is pinned at build time. Automatic installation is opt-in and waits until VPN
+  is idle.
+- **DNS diagnostics under Ping.** After confirmation, sequentially test seven
+  public resolver pairs, choose a reliable encrypted primary/backup and save it
+  for later starts. [Selection and privacy details](docs/DNS_DIAGNOSTICS.md).
+- **Six repaired playful tools.** Clickable and keyboard-accessible flashlight,
+  recorder, DOOM, calculator, Minecraft and offline video parodies. All controls
+  use local UI state only; no microphone, game process or online player.
 
 ## Other features
 
@@ -76,16 +83,22 @@ the app" — see `PLAN.md`.
 ## Download
 
 Use [**Releases in this repository**](https://github.com/maksoon4k/nn4kvpn/releases/latest), not the upstream Flux download page.
-A private repository requires GitHub access, including for release downloads.
+Downloads and in-app checks are public; a GitHub account or token is not needed.
 
 - `NN4KSetup-<version>.exe`: per-user installer.
 - `NN4K-<version>-windows-portable.zip`: extract and run `nn4k.exe`.
 - `checksums.txt`: SHA-256 hashes of both files.
 
-The published [**v1.4.3**](https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.3)
-uses the exact CI-built installer/portable bytes. See the
-[validation evidence](docs/windows-release-validation.json) and
-[qualified review](docs/SECURITY_AUDIT.md) for passed checks and untested behavior.
+The packages retain [component notices and corresponding source links](THIRD_PARTY_NOTICES.md),
+including full GPL/MPL terms; each bundled core's tagged source is available
+without an account or charge.
+
+The new **1.4.4** release adds token-free updates, repaired tools and DNS
+diagnostics. See the [changelog](docs/changelog/changelog-1.4.4.md) and
+[qualified review](docs/SECURITY_AUDIT.md) for the scope and untested behavior.
+The earlier [v1.4.3](https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.3)
+and its [validation evidence](docs/windows-release-validation.json) remain
+unchanged; published binaries are never replaced with a rebuild.
 
 The CI runtime needs a compatible **Microsoft Visual C++ v14 x64 Redistributable**
 if it is not already installed; use
@@ -119,9 +132,10 @@ flutter test --no-pub
 flutter build windows --release --no-pub --dart-define=NN4K_UPDATE_REPOSITORY=maksoon4k/nn4kvpn
 ```
 
-For a different private fork, replace `maksoon4k/nn4kvpn` with its repository slug. Only that slug
-is compiled in, **never a GitHub token**. Without the define, configure the
-repository in Settings → About → Updates.
+For a different public fork, replace `maksoon4k/nn4kvpn` with its repository slug.
+Only that slug is compiled in, **never a GitHub token**. Omitting the define pins
+this fork's default publisher; imported settings cannot redirect executable
+updates, and the application has no repository/token configuration UI.
 
 After building, package with `./scripts/build_installer.ps1 -SkipBuild
 -IsccPath <path-to-ISCC.exe>`. See [Windows build notes](docs/WINDOWS_BUILD.md)
@@ -135,10 +149,12 @@ complete-security certification**. Do not test live Proxy/TUN modes as part of
 the automated smoke check.
 
 The supplied upstream tree has no top-level license, and GitHub reported no
-recognized upstream license during this review. Redistribution rights must
-be clarified with the upstream author; do not assume MIT or another license.
-Third-party core license files are included in Windows packages, but they do
-not resolve the application's own licensing.
+recognized upstream license during this review. The maintainer confirmed the
+original author's permission for this public source/Windows distribution.
+That confirmation does not create a blanket open-source license for upstream
+code; do not assume MIT or another license. Required attribution and component
+license texts are preserved in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+and in Windows packages.
 
 ## Tech stack
 

@@ -14,16 +14,11 @@ import 'app_update_controller_test.dart' show MemorySettings;
 class UiUpdateController extends AppUpdateController {
   bool checked = false;
   @override
-  AppUpdateState build() => const AppUpdateState(hasToken: true);
-  @override
-  Future<void> loadTokenStatus() async {}
+  AppUpdateState build() => const AppUpdateState();
   @override
   Future<void> check() async {
     checked = true;
-    state = const AppUpdateState(
-      phase: AppUpdatePhase.upToDate,
-      hasToken: true,
-    );
+    state = const AppUpdateState(phase: AppUpdatePhase.upToDate);
   }
 }
 
@@ -38,9 +33,7 @@ void main() {
       ProviderScope(
         overrides: [
           appSettingsProvider.overrideWith(
-            () => MemorySettings(
-              const AppSettings(updateRepository: 'owner/nn4k'),
-            ),
+            () => MemorySettings(const AppSettings()),
           ),
           appUpdateControllerProvider.overrideWith(() => controller),
         ],
@@ -51,7 +44,13 @@ void main() {
         ),
       ),
     );
-    expect(find.text('owner/nn4k'), findsOneWidget);
+    expect(
+      find.text('Обновления доступны всем — без аккаунта и токена.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('maksoon4k'), findsNothing);
+    expect(find.textContaining('nn4kvpn'), findsNothing);
+    expect(find.byKey(const ValueKey('configure-updates')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('check-updates')));
     await tester.pump();
     expect(controller.checked, true);
@@ -59,40 +58,42 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('configuration masks tokens and fits a narrow window', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(320, 900);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          appSettingsProvider.overrideWith(
-            () => MemorySettings(
-              const AppSettings(updateRepository: 'owner/nn4k'),
+  testWidgets(
+    'public updates have no credential fields and fit a narrow window',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appSettingsProvider.overrideWith(
+              () => MemorySettings(const AppSettings()),
+            ),
+            appUpdateControllerProvider.overrideWith(UiUpdateController.new),
+          ],
+          child: const PortApp(
+            home: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.all(24),
+                child: UpdateSection(),
+              ),
             ),
           ),
-          appUpdateControllerProvider.overrideWith(UiUpdateController.new),
-        ],
-        child: const PortApp(
-          home: SingleChildScrollView(
-            child: Padding(padding: EdgeInsets.all(24), child: UpdateSection()),
-          ),
         ),
-      ),
-    );
-    await tester.tap(find.byKey(const ValueKey('configure-updates')));
-    await tester.pumpAndSettle();
-    final fields = tester
-        .widgetList<TextField>(find.byType(TextField))
-        .toList();
-    expect(fields.length, 2);
-    expect(fields.last.obscureText, true);
-    expect(fields.last.controller!.text, isEmpty);
-    expect(fields.last.enableSuggestions, false);
-    expect(fields.last.autocorrect, false);
-    expect(tester.takeException(), isNull);
-  });
+      );
+      expect(find.byKey(const ValueKey('configure-updates')), findsNothing);
+      expect(find.textContaining('GitHub'), findsNothing);
+      expect(find.textContaining('maksoon4k'), findsNothing);
+      expect(find.textContaining('nn4kvpn'), findsNothing);
+      await tester.tap(find.byKey(const ValueKey('check-updates')));
+      await tester.pumpAndSettle();
+      final fields = tester
+          .widgetList<TextField>(find.byType(TextField))
+          .toList();
+      expect(fields, isEmpty);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

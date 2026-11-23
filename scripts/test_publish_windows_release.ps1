@@ -30,12 +30,18 @@ function Argument-After([string]$Name) {
 if ($arguments[0] -eq 'api') {
     if ($arguments[1] -eq 'repos/test-owner/nn4kvpn') {
         $state.repoCalls++
-        $private = $state.scenario -ne 'public'
+        $private = $state.scenario -eq 'private'
         $id = 99
-        if ($state.scenario -eq 'privacyChanged' -and $state.repoCalls -gt 1) { $private = $false }
+        $name = 'test-owner/nn4kvpn'
+        if ($state.scenario -eq 'privacyChanged' -and $state.repoCalls -gt 1) { $private = $true }
         if ($state.scenario -eq 'repositoryIdentityChanged' -and $state.repoCalls -gt 1) { $id = 100 }
+        if ($state.scenario -eq 'wrongRepositoryId') { $id = 100 }
+        if ($state.scenario -eq 'wrongRepositoryName') { $name = 'upstream/other' }
+        if ($state.scenario -eq 'repositoryNameChanged' -and $state.repoCalls -gt 1) { $name = 'upstream/other' }
+        if ($state.scenario -eq 'missingVisibility') { $private = $null }
+        if ($state.scenario -eq 'invalidVisibility') { $private = 'false' }
         Save-State
-        [pscustomobject]@{ id = $id; private = $private; full_name = 'test-owner/nn4kvpn' } | ConvertTo-Json -Compress
+        [pscustomobject]@{ id = $id; private = $private; full_name = $name } | ConvertTo-Json -Compress
         return
     }
     if ($arguments[1] -eq 'repos/test-owner/nn4kvpn/releases/tags/v9.9.9') {
@@ -114,7 +120,12 @@ $cases = @(
     @{ Name = 'newDraft'; Fails = $false; Uploads = 3; Edits = 1 },
     @{ Name = 'newDraftWithoutTag'; Fails = $false; Uploads = 3; Edits = 1 },
     @{ Name = 'published'; Fails = $true; Uploads = 0; Edits = 0 },
-    @{ Name = 'public'; Fails = $true; Uploads = 0; Edits = 0 },
+    @{ Name = 'public'; Fails = $false; Uploads = 3; Edits = 1 },
+    @{ Name = 'private'; Fails = $true; Uploads = 0; Edits = 0 },
+    @{ Name = 'wrongRepositoryId'; Fails = $true; Uploads = 0; Edits = 0 },
+    @{ Name = 'wrongRepositoryName'; Fails = $true; Uploads = 0; Edits = 0 },
+    @{ Name = 'missingVisibility'; Fails = $true; Uploads = 0; Edits = 0 },
+    @{ Name = 'invalidVisibility'; Fails = $true; Uploads = 0; Edits = 0 },
     @{ Name = 'badChecksums'; Fails = $true; Uploads = 0; Edits = 0 },
     @{ Name = 'authFailure'; Fails = $true; Uploads = 0; Edits = 0 },
     @{ Name = 'identicalRetry'; Fails = $false; Uploads = 0; Edits = 1 },
@@ -127,7 +138,8 @@ $cases = @(
     @{ Name = 'localTampering'; Fails = $true; Uploads = 3; Edits = 0 },
     @{ Name = 'extraAsset'; Fails = $true; Uploads = 0; Edits = 0 },
     @{ Name = 'privacyChanged'; Fails = $true; Uploads = 3; Edits = 0 },
-    @{ Name = 'repositoryIdentityChanged'; Fails = $true; Uploads = 3; Edits = 0 }
+    @{ Name = 'repositoryIdentityChanged'; Fails = $true; Uploads = 3; Edits = 0 },
+    @{ Name = 'repositoryNameChanged'; Fails = $true; Uploads = 3; Edits = 0 }
 )
 $results = @()
 try {
@@ -171,7 +183,7 @@ try {
         $failed = $false
         $errorMessage = $null
         try {
-            & $publish -Repository 'test-owner/nn4kvpn' -Version '9.9.9' -ArtifactDirectory $directory -TargetCommit $target -GhPath $mock | Out-Null
+            & $publish -Repository 'test-owner/nn4kvpn' -ExpectedRepositoryId 99 -Version '9.9.9' -ArtifactDirectory $directory -TargetCommit $target -GhPath $mock | Out-Null
         } catch {
             $failed = $true
             $errorMessage = $_.Exception.Message

@@ -66,7 +66,6 @@ void main() {
         appSettingsProvider.overrideWith(
           () => MemorySettings(
             AppSettings(
-              updateRepository: 'owner/nn4k',
               checkForUpdatesOnStartup: checks,
               autoInstallUpdates: automatic,
             ),

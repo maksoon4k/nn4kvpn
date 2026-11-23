@@ -70,9 +70,10 @@ flutter build windows --release --no-pub `
   --dart-define=NN4K_UPDATE_REPOSITORY=maksoon4k/nn4kvpn
 ```
 
-For a different fork, use its actual repository slug. Omitting the define leaves
-repository configuration to the in-app update settings; it must not fall back
-to the upstream repository. Do not put any token into a build command.
+For a different public fork, use its actual repository slug. Omitting the define
+pins the default publisher `maksoon4k/nn4kvpn`, not the upstream repository.
+There is no editable repository/token UI, and imported settings cannot change
+that executable publisher. Do not put a token into any build command.
 
 The Windows core archive pins/hashes live in `scripts/core_versions.env`:
 Xray **v26.11.9** and sing-box **v1.14.4**. Downloads are verified before
@@ -126,8 +127,8 @@ does not inject repository configuration into an already compiled application.
 Expected outputs in `build\installer`:
 
 ```text
-NN4KSetup-1.4.3.exe
-NN4K-1.4.3-windows-portable.zip
+NN4KSetup-1.4.4.exe
+NN4K-1.4.4-windows-portable.zip
 checksums.txt
 ```
 
@@ -136,6 +137,12 @@ The packaging helper rejects unlisted native binaries, launcher scripts and
 reparse points, and rejects an incomplete runtime bundle before invoking Inno.
 It also requires the local font manifest/license and validates all three Inter
 font hashes, so a stale pre-font-fix bundle cannot be packaged with `-SkipBuild`.
+It also requires the generated Flutter dependency notices, the original globe
+license and `THIRD_PARTY_NOTICES.md`; CMake stages the latter two explicitly.
+The original sing-box notice is retained alongside the complete GPL v3 text in
+`licenses/GPL-3.0.txt`; release notes link to each pinned core's corresponding source.
+Packaging rejects a compiled product version that differs from `pubspec.yaml`,
+including with `-SkipBuild`, so an older runtime cannot be mislabeled as an update.
 The installer is per-user, defaults to `%LocalAppData%\NN4K`, retains its fixed
 AppId and preserves `%AppData%\flux`. No Authenticode signing is configured.
 It accepts only an x64 Windows OS (`ArchitecturesAllowed=x64os`), because the
@@ -196,6 +203,20 @@ Publishing safeguards can be exercised without any network calls:
 
 It substitutes a local GitHub command stub, checks successful draft publication
 and fail-closed retry/tampering/privacy scenarios, and cannot publish to GitHub.
+The current 23 cases require public visibility and a pinned repository ID,
+including wrong/missing identity/visibility and changes during publication.
+
+### Offline DNS schema checks
+
+Use `tool/dump_singbox_config.dart --dns-pair <0..6>` and, separately,
+`--dns-pair <0..6> --reverse-dns-pair` to generate both primary/backup orientations
+for all seven curated providers. Also check the legacy default single resolver.
+Validate each generated JSON with the pinned **sing-box v1.14.4** using only
+`sing-box check -c <file>`. Do not run the generated Proxy/TUN configuration.
+These 15 checks validate the schema, not real DNS reachability, routing or leaks.
+`./scripts/check_dns_configs.ps1 -Directory <disposable-directory>` performs all
+15 checks with initialized local tools; both Windows packaging workflows require
+it to pass. The script invokes only `sing-box version` and `check`, never `run`.
 
 The **Windows Checks** workflow also has a manual `build_windows` option. It
 performs analysis, tests and a complete Windows installer/ZIP build with read-only
@@ -203,7 +224,7 @@ repository permissions, then stores CI artifacts; it never publishes a release.
 The expanded workflow also runs both isolated `--safe-start` UI modes and retains
 their JSON/process-output evidence. No real profile or Proxy/TUN connection is used.
 
-## Recorded status — 2026-11-23
+## Recorded baseline — initial 1.4.3 release, 2026-11-23
 
 - Full suite after the local-font fix: **323 tests passed**, including the original
   first-run setup, completion/skip/replay, background-default and seven
@@ -259,5 +280,6 @@ their JSON/process-output evidence. No real profile or Proxy/TUN connection is u
   replay results are committed in
   [windows-release-validation.json](windows-release-validation.json).
 - End-to-end upgrade, clean-machine/Windows N and JNI/JVM functionality remain
-  untested; upstream/application licensing remains unresolved. See
+  untested. The initial upstream/application permission question was subsequently
+  answered by the maintainer's confirmation, without inventing a general license. See
   [security review](SECURITY_AUDIT.md) and [updates](WINDOWS_UPDATES.md).

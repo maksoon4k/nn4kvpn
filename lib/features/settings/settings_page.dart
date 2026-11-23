@@ -19,7 +19,9 @@ import '../../core_abstraction/routing_preset.dart';
 import '../../engines/geo_assets.dart';
 import '../../engines/singbox/geo_ruleset_cache.dart';
 import '../../l10n/strings.dart';
+import '../../l10n/app_locale.dart';
 import '../../widgets/port_ui/port_ui.dart';
+import '../ping/dns_diagnostic_section.dart';
 import '../servers/flatten_leaves.dart';
 import '../servers/import_routing_preset_dialog.dart';
 import '../servers/routing_preset_exchange.dart';
@@ -482,6 +484,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             onChanged: (value) =>
                 notifier.update((s) => s.copyWith(pingAllOnStartup: value)),
           ),
+          const SizedBox(height: 24),
+          const DnsDiagnosticSection(),
         ],
       ),
       _SettingsSection.tun => Column(
@@ -510,6 +514,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           Text(S.tunDnsLabel, style: PortText.small),
           const SizedBox(height: 6),
           PortInput(
+            key: ValueKey('tun-dns-${settings.tunDnsServer}'),
             initialValue: settings.tunDnsServer,
             placeholder: defaultTunDnsServer,
             onSubmitted: (value) {
@@ -517,10 +522,18 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               notifier.update(
                 (s) => s.copyWith(
                   tunDnsServer: server.isEmpty ? defaultTunDnsServer : server,
+                  tunDnsSecondaryServer: '',
                 ),
               );
             },
           ),
+          if (settings.tunDnsSecondaryServer.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              '${AppLocale.effective == AppLanguage.en ? 'Backup DNS' : 'Резервный DNS'}: ${settings.tunDnsSecondaryServer}',
+              style: PortText.muted,
+            ),
+          ],
           const SizedBox(height: 6),
           // Ручка «DNS для прокси» отсутствует не по недосмотру: в
           // Proxy-режиме xray домены не резолвит вообще, а передаёт
@@ -789,12 +802,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ];
       await pregenerateGeoRuleSets(allRoutingRules);
       if (!context.mounted) return;
-      PortToaster.of(context)
-          .show(PortToast(title: Text(S.geoAssetsUpdateSuccess)));
+      PortToaster.of(
+        context,
+      ).show(PortToast(title: Text(S.geoAssetsUpdateSuccess)));
     } catch (e) {
       if (!context.mounted) return;
-      PortToaster.of(context)
-          .show(PortToast(title: Text(S.geoAssetsUpdateFailure(e))));
+      PortToaster.of(
+        context,
+      ).show(PortToast(title: Text(S.geoAssetsUpdateFailure(e))));
     } finally {
       if (mounted) setState(() => _updatingGeoAssets = false);
     }
@@ -819,8 +834,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       );
     } catch (e) {
       if (!context.mounted) return;
-      PortToaster.of(context)
-          .show(PortToast(title: Text(S.videoImportFailure(e))));
+      PortToaster.of(
+        context,
+      ).show(PortToast(title: Text(S.videoImportFailure(e))));
     } finally {
       if (mounted) setState(() => _importingVideo = false);
     }
@@ -1214,12 +1230,14 @@ class _RoutingPresetsSection extends ConsumerWidget {
     }
 
     Future<void> exportPreset(RoutingPreset preset) async {
-      final json = const JsonEncoder.withIndent('  ')
-          .convert(exportRoutingPresetJson(preset));
+      final json = const JsonEncoder.withIndent(
+        '  ',
+      ).convert(exportRoutingPresetJson(preset));
       await Clipboard.setData(ClipboardData(text: json));
       if (!context.mounted) return;
-      PortToaster.of(context)
-          .show(PortToast(title: Text(S.presetExportedToClipboard)));
+      PortToaster.of(
+        context,
+      ).show(PortToast(title: Text(S.presetExportedToClipboard)));
     }
 
     Future<void> importFromClipboard() async {
@@ -1227,8 +1245,9 @@ class _RoutingPresetsSection extends ConsumerWidget {
       final text = data?.text?.trim();
       if (!context.mounted) return;
       if (text == null || text.isEmpty) {
-        PortToaster.of(context)
-            .show(PortToast.destructive(title: Text(S.presetClipboardEmpty)));
+        PortToaster.of(
+          context,
+        ).show(PortToast.destructive(title: Text(S.presetClipboardEmpty)));
         return;
       }
       try {
@@ -1245,8 +1264,9 @@ class _RoutingPresetsSection extends ConsumerWidget {
           );
         }
         if (!context.mounted) return;
-        PortToaster.of(context)
-            .show(PortToast(title: Text(S.presetImportedFromClipboard)));
+        PortToaster.of(
+          context,
+        ).show(PortToast(title: Text(S.presetImportedFromClipboard)));
       } catch (e) {
         if (!context.mounted) return;
         PortToaster.of(context).show(

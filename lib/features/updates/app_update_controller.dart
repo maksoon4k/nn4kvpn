@@ -4,17 +4,16 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../core_abstraction/app_settings.dart';
 import '../../core_abstraction/app_settings_provider.dart';
 import '../connection/connection_controller.dart';
 import '../connection/connection_state.dart';
 import 'github_release.dart';
 import 'github_update_service.dart';
 import 'windows_update_installer.dart';
-import 'windows_update_token_store.dart';
 
 enum AppUpdatePhase {
   idle,
-  configuring,
   checking,
   upToDate,
   available,
@@ -29,7 +28,6 @@ class AppUpdateState {
   final GitHubRelease? release;
   final UpdateFailure? failure;
   final double progress;
-  final bool hasToken;
   final bool hasDownloaded;
 
   const AppUpdateState({
@@ -37,20 +35,20 @@ class AppUpdateState {
     this.release,
     this.failure,
     this.progress = 0,
-    this.hasToken = false,
     this.hasDownloaded = false,
   });
 
   bool get busy => const {
-    AppUpdatePhase.configuring,
     AppUpdatePhase.checking,
     AppUpdatePhase.downloading,
     AppUpdatePhase.installing,
   }.contains(phase);
 }
 
-final updateTokenStoreProvider = Provider<UpdateTokenStore>(
-  (_) => const WindowsUpdateTokenStore(),
+/// No UI configuration, saved credential or imported JSON can change this
+/// executable publisher. Public metadata/assets are fetched anonymously.
+final updateRepositoryProvider = Provider<GitHubRepository>(
+  (_) => GitHubRepository.parse(defaultUpdateRepository),
 );
 
 final githubUpdateServiceProvider = Provider<GitHubUpdateService>((ref) {
@@ -94,99 +92,27 @@ class AppUpdateController extends Notifier<AppUpdateState> {
       _disposed = true;
       _generation++;
     });
-    ref.listen(appSettingsProvider, (previous, next) {
-      if (previous?.updateRepository == next.updateRepository) return;
+    ref.listen(updateRepositoryProvider, (previous, next) {
+      if (previous?.slug == next.slug) return;
       _generation++;
       _discardDownloaded();
       state = const AppUpdateState();
+      ref
+          .read(appSettingsProvider.notifier)
+          .update((settings) => settings.copyWith(autoInstallUpdates: false));
     });
     return const AppUpdateState();
   }
 
-  GitHubRepository get _repository =>
-      GitHubRepository.parse(ref.read(appSettingsProvider).updateRepository);
+  GitHubRepository get _repository => ref.read(updateRepositoryProvider);
 
-  bool _current(int generation) => !_disposed && generation == _generation;
-
-  Future<void> loadTokenStatus() async {
-    if (state.busy) return;
-    final generation = _generation;
-    try {
-      final repository = _repository;
-      final token = await ref
-          .read(updateTokenStoreProvider)
-          .read(repository.slug);
-      if (!_current(generation) || state.busy) return;
-      state = AppUpdateState(
-        phase: state.phase,
-        release: state.release,
-        failure: state.failure,
-        progress: state.progress,
-        hasToken: token?.isNotEmpty ?? false,
-        hasDownloaded: state.hasDownloaded,
-      );
-    } on UpdateException catch (error) {
-      if (!_current(generation)) return;
-      if (error.failure != UpdateFailure.repositoryNotConfigured) {
-        _fail(error.failure);
-      }
-    }
-  }
-
-  /// Blank token preserves the existing credential; removal is explicit.
-  Future<void> configure(
-    String input, {
-    String token = '',
-    bool removeToken = false,
-  }) async {
-    if (state.busy) throw const UpdateException(UpdateFailure.busy);
-    final repository = GitHubRepository.parse(input);
-    final previous = state;
-    final generation = ++_generation;
-    state = AppUpdateState(
-      phase: AppUpdatePhase.configuring,
-      release: previous.release,
-      progress: previous.progress,
-      hasToken: previous.hasToken,
-      hasDownloaded: previous.hasDownloaded,
-    );
-    final store = ref.read(updateTokenStoreProvider);
-    try {
-      if (removeToken) {
-        await store.delete(repository.slug);
-      } else if (token.trim().isNotEmpty) {
-        await store.write(repository.slug, token);
-      }
-      if (!_current(generation)) return;
-      ref
-          .read(appSettingsProvider.notifier)
-          .update(
-            (settings) => settings.copyWith(
-              updateRepository: repository.slug,
-              // A new executable publisher requires fresh opt-in to auto-install.
-              autoInstallUpdates: settings.updateRepository == repository.slug
-                  ? settings.autoInstallUpdates
-                  : false,
-            ),
-          );
-      if (_current(generation)) {
-        state = AppUpdateState(
-          phase: previous.hasDownloaded
-              ? AppUpdatePhase.ready
-              : previous.release != null
-              ? AppUpdatePhase.available
-              : AppUpdatePhase.idle,
-          release: previous.release,
-          progress: previous.progress,
-          hasToken: previous.hasToken,
-          hasDownloaded: previous.hasDownloaded,
-        );
-      }
-      if (!_disposed) await loadTokenStatus();
-    } catch (_) {
-      if (_current(generation)) state = previous;
-      rethrow;
-    }
+  bool _current(int generation) {
+    if (_disposed || generation != _generation) return false;
+    // Provider dependencies may refresh lazily. Flush an internally invalidated
+    // publisher before accepting an async result or authorizing Setup, rather
+    // than relying on the listener's scheduled refresh to win a race.
+    ref.read(updateRepositoryProvider);
+    return !_disposed && generation == _generation;
   }
 
   Future<void> check() async {
@@ -195,22 +121,15 @@ class AppUpdateController extends Notifier<AppUpdateState> {
     state = AppUpdateState(
       phase: AppUpdatePhase.checking,
       release: state.release,
-      hasToken: state.hasToken,
       hasDownloaded: _downloaded != null,
     );
     try {
       final repository = _repository;
-      final token = await ref
-          .read(updateTokenStoreProvider)
-          .read(repository.slug);
       final version = await ref.read(updateCurrentVersionProvider.future);
+      if (!_current(generation)) return;
       final release = await ref
           .read(githubUpdateServiceProvider)
-          .checkLatest(
-            repository: repository,
-            currentVersion: version,
-            token: token,
-          );
+          .checkLatest(repository: repository, currentVersion: version);
       if (!_current(generation)) return;
       final cached = _downloaded?.release;
       if (release == null ||
@@ -228,7 +147,6 @@ class AppUpdateController extends Notifier<AppUpdateState> {
             ? AppUpdatePhase.available
             : AppUpdatePhase.ready,
         release: release,
-        hasToken: token?.isNotEmpty ?? false,
         hasDownloaded: _downloaded != null,
       );
     } catch (error) {
@@ -240,27 +158,18 @@ class AppUpdateController extends Notifier<AppUpdateState> {
     if (state.busy || state.release == null || _downloaded != null) return;
     final generation = ++_generation;
     final release = state.release!;
-    state = AppUpdateState(
-      phase: AppUpdatePhase.downloading,
-      release: release,
-      hasToken: state.hasToken,
-    );
+    state = AppUpdateState(phase: AppUpdatePhase.downloading, release: release);
     try {
-      final token = await ref
-          .read(updateTokenStoreProvider)
-          .read(release.repository.slug);
       final service = ref.read(githubUpdateServiceProvider);
       final downloaded = await service.download(
         release: release,
         directory: ref.read(updateDownloadDirectoryProvider),
-        token: token,
         onProgress: (progress) {
           if (!_current(generation)) return;
           state = AppUpdateState(
             phase: AppUpdatePhase.downloading,
             release: release,
             progress: progress,
-            hasToken: state.hasToken,
           );
         },
       );
@@ -273,7 +182,6 @@ class AppUpdateController extends Notifier<AppUpdateState> {
         phase: AppUpdatePhase.ready,
         release: release,
         progress: 1,
-        hasToken: state.hasToken,
         hasDownloaded: true,
       );
     } catch (error) {
@@ -295,7 +203,6 @@ class AppUpdateController extends Notifier<AppUpdateState> {
       phase: AppUpdatePhase.installing,
       release: update.release,
       progress: 1,
-      hasToken: state.hasToken,
       hasDownloaded: true,
     );
     var shutdownStarted = false;
@@ -309,7 +216,6 @@ class AppUpdateController extends Notifier<AppUpdateState> {
           phase: AppUpdatePhase.ready,
           release: update.release,
           progress: 1,
-          hasToken: state.hasToken,
           hasDownloaded: true,
         );
         return;
@@ -332,7 +238,6 @@ class AppUpdateController extends Notifier<AppUpdateState> {
             phase: AppUpdatePhase.ready,
             release: update.release,
             progress: 1,
-            hasToken: state.hasToken,
             hasDownloaded: true,
           );
         }
@@ -375,7 +280,6 @@ class AppUpdateController extends Notifier<AppUpdateState> {
       phase: AppUpdatePhase.error,
       failure: failure,
       release: state.release,
-      hasToken: state.hasToken,
       hasDownloaded: _downloaded != null,
     );
   }

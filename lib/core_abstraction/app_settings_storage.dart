@@ -7,9 +7,11 @@ import 'atomic_json_file.dart';
 /// Хранилище настроек приложения — отдельный файл от профиля серверов
 /// (`profile_storage.dart`), тот же каталог `%AppData%\flux`.
 class AppSettingsStorage {
-  const AppSettingsStorage();
+  final File? _overrideFile;
+  const AppSettingsStorage({File? file}) : _overrideFile = file;
 
   File _file() {
+    if (_overrideFile != null) return _overrideFile;
     final appData = Platform.environment['APPDATA'];
     final dir = appData != null
         ? '$appData\\flux'

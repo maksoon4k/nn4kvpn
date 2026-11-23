@@ -13,7 +13,6 @@ import 'package:flux/features/updates/app_update_controller.dart';
 import 'package:flux/features/updates/github_release.dart';
 import 'package:flux/features/updates/github_update_service.dart';
 import 'package:flux/features/updates/windows_update_installer.dart';
-import 'package:flux/features/updates/windows_update_token_store.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
@@ -24,7 +23,7 @@ import 'github_update_service_test.dart'
 void main() {
   late ProviderContainer container;
   late Directory directory;
-  late MemoryTokenStore tokens;
+  late List<http.Request> requests;
   late FakeConnection connection;
   late FakeInstaller installer;
   late List<String> events;
@@ -32,7 +31,7 @@ void main() {
 
   setUp(() async {
     directory = await Directory.systemTemp.createTemp('nn4k-controller-tests-');
-    tokens = MemoryTokenStore();
+    requests = [];
     events = [];
     connection = FakeConnection(events);
     releaseJson = releaseFixture();
@@ -42,6 +41,7 @@ void main() {
       ..['digest'] = 'sha256:${fixture.installer.sha256}';
     final service = GitHubUpdateService(
       client: MockClient((request) async {
+        requests.add(request);
         if (request.url.path.endsWith('/latest')) {
           return http.Response(jsonEncode(releaseJson), 200);
         }
@@ -52,11 +52,12 @@ void main() {
     container = ProviderContainer(
       overrides: [
         appSettingsProvider.overrideWith(
-          () =>
-              MemorySettings(const AppSettings(updateRepository: 'owner/nn4k')),
+          () => MemorySettings(const AppSettings()),
         ),
         connectionControllerProvider.overrideWith(() => connection),
-        updateTokenStoreProvider.overrideWithValue(tokens),
+        updateRepositoryProvider.overrideWith(
+          (ref) => GitHubRepository.parse(ref.watch(fixturePublisherProvider)),
+        ),
         githubUpdateServiceProvider.overrideWithValue(service),
         updateInstallerProvider.overrideWithValue(installer),
         updateCurrentVersionProvider.overrideWith((_) async => '1.9.0'),
@@ -85,6 +86,15 @@ void main() {
       expect(state().phase, AppUpdatePhase.ready);
       expect(state().hasDownloaded, true);
       expect(events, isEmpty);
+      expect(requests, hasLength(2));
+      expect(
+        requests.every(
+          (request) => !request.headers.keys.any(
+            (header) => header.toLowerCase() == 'authorization',
+          ),
+        ),
+        true,
+      );
     },
   );
 
@@ -194,23 +204,38 @@ void main() {
   );
 
   test(
-    'configuration stores a per-repository credential, not a JSON token',
+    'legacy settings cannot redirect the publisher or add request credentials',
     () async {
-      await controller().configure(
-        'https://github.com/owner/nn4k',
-        token: 'fixture_read_only_token',
-      );
-      expect(tokens.values, {'owner/nn4k': 'fixture_read_only_token'});
+      container
+          .read(appSettingsProvider.notifier)
+          .update(
+            (_) => AppSettings.fromJson({
+              'updateRepository': 'attacker/nn4k',
+              'updateToken': 'synthetic_legacy_credential',
+            }),
+          );
+      await controller().check();
+      await controller().download();
+      expect(state().phase, AppUpdatePhase.ready);
+      expect(state().release!.repository.slug, 'owner/nn4k');
       expect(
-        jsonEncode(container.read(appSettingsProvider).toJson()),
-        isNot(contains('fixture_read_only_token')),
+        requests.every(
+          (request) =>
+              request.url.path.startsWith('/repos/owner/nn4k/') &&
+              !request.headers.containsKey('Authorization'),
+        ),
+        true,
       );
-      expect(state().hasToken, true);
-      await controller().configure('owner/nn4k'); // Blank preserves the token.
-      expect(state().hasToken, true);
-      await controller().configure('owner/nn4k', removeToken: true);
-      expect(tokens.values, isEmpty);
-      expect(state().hasToken, false);
+      expect(events, isEmpty);
+      final defaultContainer = ProviderContainer();
+      try {
+        expect(
+          defaultContainer.read(updateRepositoryProvider).slug,
+          defaultUpdateRepository,
+        );
+      } finally {
+        defaultContainer.dispose();
+      }
     },
   );
 
@@ -220,7 +245,9 @@ void main() {
       container
           .read(appSettingsProvider.notifier)
           .update((settings) => settings.copyWith(autoInstallUpdates: true));
-      await controller().configure('other/nn4k');
+      controller();
+      container.read(fixturePublisherProvider.notifier).change('other/nn4k');
+      container.read(updateRepositoryProvider);
       expect(container.read(appSettingsProvider).autoInstallUpdates, false);
       expect(state().release, isNull);
     },
@@ -234,11 +261,7 @@ void main() {
       connection.prepareHold = hold.future;
       final installing = controller().install();
       await connection.prepareStarted.future;
-      container
-          .read(appSettingsProvider.notifier)
-          .update(
-            (settings) => settings.copyWith(updateRepository: 'other/nn4k'),
-          );
+      container.read(fixturePublisherProvider.notifier).change('other/nn4k');
       hold.complete();
       await installing;
       expect(events, ['validate', 'prepareForExit', 'cancelExit']);
@@ -276,11 +299,7 @@ void main() {
       installer.launchHold = hold.future;
       final installing = controller().install();
       await installer.launchStarted.future;
-      container
-          .read(appSettingsProvider.notifier)
-          .update(
-            (settings) => settings.copyWith(updateRepository: 'other/nn4k'),
-          );
+      container.read(fixturePublisherProvider.notifier).change('other/nn4k');
       hold.complete();
       await installing;
       expect(events, ['validate', 'prepareForExit', 'cancelExit']);
@@ -302,11 +321,12 @@ void main() {
       final isolated = ProviderContainer(
         overrides: [
           appSettingsProvider.overrideWith(
-            () => MemorySettings(
-              const AppSettings(updateRepository: 'owner/nn4k'),
-            ),
+            () => MemorySettings(const AppSettings()),
           ),
-          updateTokenStoreProvider.overrideWithValue(tokens),
+          updateRepositoryProvider.overrideWith(
+            (ref) =>
+                GitHubRepository.parse(ref.watch(fixturePublisherProvider)),
+          ),
           githubUpdateServiceProvider.overrideWithValue(service),
           updateCurrentVersionProvider.overrideWith((_) async => '1.9.0'),
         ],
@@ -319,11 +339,7 @@ void main() {
           .read(appUpdateControllerProvider.notifier)
           .check();
       await requested.future;
-      isolated
-          .read(appSettingsProvider.notifier)
-          .update(
-            (settings) => settings.copyWith(updateRepository: 'other/nn4k'),
-          );
+      isolated.read(fixturePublisherProvider.notifier).change('other/nn4k');
       response.complete(http.Response(jsonEncode(releaseJson), 200));
       await checking;
       expect(
@@ -345,15 +361,16 @@ class MemorySettings extends AppSettingsController {
       state = transform(state);
 }
 
-class MemoryTokenStore implements UpdateTokenStore {
-  final values = <String, String>{};
+// A test-only provider simulates internal build-origin invalidation. There is
+// deliberately no application setting or UI that can perform this operation.
+final fixturePublisherProvider = NotifierProvider<FixturePublisher, String>(
+  FixturePublisher.new,
+);
+
+class FixturePublisher extends Notifier<String> {
   @override
-  Future<String?> read(String repository) async => values[repository];
-  @override
-  Future<void> write(String repository, String token) async =>
-      values[repository] = token;
-  @override
-  Future<void> delete(String repository) async => values.remove(repository);
+  String build() => 'owner/nn4k';
+  void change(String publisher) => state = publisher;
 }
 
 class FakeConnection extends ConnectionController {

@@ -29,8 +29,7 @@ class AutomaticUpdateScheduler {
       (_) => unawaited(_tick()),
     );
     _settings = container.listen(appSettingsProvider, (previous, next) {
-      if (previous?.updateRepository != next.updateRepository ||
-          previous?.checkForUpdatesOnStartup != next.checkForUpdatesOnStartup ||
+      if (previous?.checkForUpdatesOnStartup != next.checkForUpdatesOnStartup ||
           previous?.autoInstallUpdates != next.autoInstallUpdates) {
         _initial?.cancel();
         _initial = Timer(const Duration(seconds: 1), () => unawaited(_tick()));
@@ -44,8 +43,7 @@ class AutomaticUpdateScheduler {
   Future<void> _tick() async {
     if (_busy || _disposed) return;
     final settings = container.read(appSettingsProvider);
-    if ((!settings.checkForUpdatesOnStartup && !settings.autoInstallUpdates) ||
-        settings.updateRepository.isEmpty) {
+    if (!settings.checkForUpdatesOnStartup && !settings.autoInstallUpdates) {
       return;
     }
     _busy = true;

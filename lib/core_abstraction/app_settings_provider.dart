@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_settings.dart';
 import 'app_settings_storage.dart';
 
+final appSettingsStorageProvider = Provider<AppSettingsStorage>(
+  (_) => appSettingsStorage,
+);
+
 final appSettingsProvider =
     NotifierProvider<AppSettingsController, AppSettings>(
       AppSettingsController.new,
@@ -10,11 +14,11 @@ final appSettingsProvider =
 
 class AppSettingsController extends Notifier<AppSettings> {
   @override
-  AppSettings build() => appSettingsStorage.load();
+  AppSettings build() => ref.read(appSettingsStorageProvider).load();
 
   void update(AppSettings Function(AppSettings settings) transform) {
     final next = transform(state);
-    appSettingsStorage.save(next);
+    ref.read(appSettingsStorageProvider).save(next);
     state = next;
   }
 }

@@ -335,6 +335,7 @@ CoreEngine _createPlatformConnectionEngine(
         xrayExecutablePath: defaultXrayExecutablePath(),
         singBoxExecutablePath: defaultSingBoxExecutablePath(),
         upstreamDns: settings.tunDnsServer,
+        upstreamDnsSecondary: settings.tunDnsSecondaryServer,
         logLevel: settings.coreLogLevel,
       ),
     },
