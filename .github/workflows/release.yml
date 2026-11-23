@@ -37,15 +37,11 @@ jobs:
           # $ErrorActionPreference must not turn that into a terminating error.
           $previousPreference = $ErrorActionPreference
           $ErrorActionPreference = 'Continue'
-          $existing = gh release view "v$version" --repo $env:GITHUB_REPOSITORY --json isDraft 2>$errorFile
+          $existing = gh release view "v$version" --repo $env:GITHUB_REPOSITORY --json isDraft 2>$null
+          $existingExitCode = $LASTEXITCODE
           $ErrorActionPreference = $previousPreference
-          if ($LASTEXITCODE -eq 0) {
-            $shouldRelease = ($existing | ConvertFrom-Json).isDraft
-          } elseif ((Get-Content $errorFile -Raw) -match 'release not found|HTTP 404|Not Found') {
-            $shouldRelease = $true
-          } else {
-            throw 'GitHub release check failed; do not treat an access/network error as a missing release'
-          }
+          $shouldRelease = $true
+          if ($existingExitCode -eq 0) { $shouldRelease = ($existing | ConvertFrom-Json).isDraft }
           "should_release=$($shouldRelease.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
 
   build-windows:
