@@ -61,6 +61,22 @@ errors or warnings and **11 informational lints**. These local checks do not
 replace hosted Windows packaging or both strict startup gates; the final release
 must use their exact successfully tested CI artifacts.
 
+Those final gates are now complete for the public
+[v1.4.4 release](https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.4):
+[Windows Checks 45127094577](https://github.com/maksoon4k/nn4kvpn/actions/runs/45127094577)
+passed the same **383 tests / 23 guards / 15 schemas**, packaging and both strict
+startup modes. Exact CI bytes passed both modes locally, then were published and
+independently downloaded without authentication; all **318 portable files** matched.
+A freshly compiled production-controller replay accepted that public metadata and
+installer, rejected same-size tampering and preserved unrelated files/settings,
+without overriding the publisher or launching the installer/VPN. The finalized
+pre-visibility history scan covered **6 commits / 558 objects**, with the same 21
+reviewed synthetic findings; five retained Actions logs were also inspected.
+See the [separate qualified 1.4.4 record](WINDOWS_RELEASE_1_4_4.md) and
+[durable JSON](windows-release-validation-1.4.4.json). The historical evidence below
+is not relabeled or overwritten. This still does not certify end-to-end upgrading,
+clean-machine compatibility or live VPN/privacy behavior.
+
 ## Initial 1.4.3 validation evidence (historical)
 
 | Check | Recorded result |

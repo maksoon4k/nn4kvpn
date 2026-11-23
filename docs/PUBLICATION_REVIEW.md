@@ -79,3 +79,28 @@ The previously exposed PAT must be revoked at GitHub; revocation remains
 unconfirmed. It is not embedded or reused for application updates. A passing
 source/build/startup check is not an antivirus, backdoor-free or traffic-leak
 certification; see the [qualified review](SECURITY_AUDIT.md).
+
+## Completed public 1.4.4 publication
+
+The repository was changed to **public** only after the final exact-source gates
+passed on **2026-11-23**. Immediately beforehand, the source at
+`5251b25584ad1733bf4734d22aa040c576b7976a` contained **6 reachable commits / 558
+objects**; the candidate inventory remained **362 files: 314 text / 48 binary**.
+The same **21 findings** matched the previously reviewed object/location pairs;
+there were no new high-risk findings. Five completed retained Actions runs were
+inspected, including the earlier failed cleanup run. A fresh public-facing review
+again confirmed one branch, one historical tag/release, no issues/PRs and a disabled
+wiki before the visibility transition.
+
+[v1.4.4](https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.4), release ID
+**455099291**, publishes only the exact successfully tested CI packages. Public
+repository/tag/latest metadata and all three asset API downloads were checked
+without account credentials. The historical **v1.4.3** release/tag/assets and its
+validation JSON remain unchanged. The final 1.4.4 report is separate:
+[publication and limits](WINDOWS_RELEASE_1_4_4.md),
+[durable evidence](windows-release-validation-1.4.4.json).
+
+The file/object counts above describe the **tested build and pre-visibility
+snapshot**, not later documentation-only follow-ups. Such follow-ups must be
+scanned/reviewed separately and cannot replace the tested tag or published bytes.
+The exposed PAT's revocation and live VPN/privacy behavior remain unverified.

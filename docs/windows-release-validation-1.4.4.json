@@ -1,0 +1,710 @@
+{
+    "EvidenceSchemaVersion": 1,
+    "CheckedAt":  "2026-11-23T07:48:13.8595145Z",
+    "Version":  "1.4.4+9",
+    "BuildSourceCommit":  "5251b25584ad1733bf4734d22aa040c576b7976a",
+    "Repository":  {
+                       "FullName":  "maksoon4k/nn4kvpn",
+                       "Id":  1468003190,
+                       "Private":  false,
+                       "Visibility":  "public"
+                   },
+    "Release":  {
+                    "Id":  455099291,
+                    "Tag":  "v1.4.4",
+                    "Url":  "https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.4",
+                    "PublishedAt":  "2026-11-23T07:23:35Z",
+                    "Draft":  false,
+                    "Prerelease":  false,
+                    "TagCommitVerified":  true,
+                    "LatestVerified":  true,
+                    "ExactSuccessfullyTestedCiBytesPublished":  true,
+                    "AssetSizesAndDigestsVerified":  true,
+                    "SeparatelyDownloadedAnonymousAssetHashesVerified":  true,
+                    "Artifacts":  [
+                                      {
+                                          "Id":  781959024,
+                                          "Name":  "NN4KSetup-1.4.4.exe",
+                                          "Bytes":  41709284,
+                                          "Sha256":  "62c2d266f0522642e0a4e7bc26768e7c24f8eeef4fbc88a8ba7ebbee91736430"
+                                      },
+                                      {
+                                          "Id":  781960391,
+                                          "Name":  "NN4K-1.4.4-windows-portable.zip",
+                                          "Bytes":  58625484,
+                                          "Sha256":  "b0919c085de4d9094a8f37b61f8c1a52fb111a9f7054bc991786f2fd4c39e48e"
+                                      },
+                                      {
+                                          "Id":  781963188,
+                                          "Name":  "checksums.txt",
+                                          "Bytes":  186,
+                                          "Sha256":  "eae6e61cac5c6a5f3f6ff4b0658ee7d0655d96baa4a335800d2cd4d1780ae9aa"
+                                      }
+                                  ],
+                    "Original143TagAndAssetIdentitiesSizesDigestsUnchanged":  true,
+                    "Original143ReleaseId":  454794402
+                },
+    "ReleaseNotesVerification":  {
+                                     "CheckedAt":  "2026-11-23T07:27:49.6236311Z",
+                                     "SourceCommit":  "5251b25584ad1733bf4734d22aa040c576b7976a",
+                                     "ReleaseId":  455099291,
+                                     "OriginalPublisherTemplatePreserved":  true,
+                                     "InspectedPrerequisitesAndExactCiIdentityAppended":  true,
+                                     "OnlyNew144ReleaseBodyEdited":  true,
+                                     "FinalTemplateMatchesPinnedUtf8Source":  true,
+                                     "InitialRenderedTemplateEncodingCorrected":  true,
+                                     "AllOriginalAssetIdsSizesAndDigestsUnchanged":  true,
+                                     "TagAndLatestUnchanged":  true,
+                                     "Existing143Unchanged":  true,
+                                     "NotesSha256":  "3cc2f1b94b34468492b5be3dc7b04a1a1850747b08ecfbeee6eb4a432915bcca"
+                                 },
+    "HostedValidation":  {
+                             "BuildOrigin":  "GitHub Windows Checks",
+                             "RunId":  45127094577,
+                             "RunUrl":  "https://github.com/maksoon4k/nn4kvpn/actions/runs/45127094577",
+                             "SourceCommit":  "5251b25584ad1733bf4734d22aa040c576b7976a",
+                             "FlutterTests":  383,
+                             "PublishingGuards":  23,
+                             "OfflineDnsSchemas":  15,
+                             "AnalyzerErrors":  0,
+                             "AnalyzerWarnings":  0,
+                             "AnalyzerInformationalLints":  11,
+                             "LockedDependenciesUsed":  true,
+                             "BothStrictUiModesPassed":  true,
+                             "StartupRunnerMatchesPublishedPortable":  true,
+                             "Startup":  [
+                                             {
+                                                 "ProfileMode":  "IsolatedMainScreen",
+                                                 "StartedAt":  "2026-11-23T07:00:34.1342966Z",
+                                                 "ExecutableSha256":  "81f38581332f45fbfbbf789b9592f897e63f3e0c0397e1441b9eb9ec6925f4b9",
+                                                 "WindowOpened":  true,
+                                                 "ExitedGracefully":  true,
+                                                 "ForcedTermination":  false,
+                                                 "ExitCode":  0,
+                                                 "CoreChildrenObserved":  0,
+                                                 "TcpConnectionInspectionAvailable":  true,
+                                                 "TcpConnectionsObserved":  0,
+                                                 "TcpSnapshotsObserved":  [
+                                                                              {
+                                                                                  "Phase":  "InputIdle",
+                                                                                  "Available":  true,
+                                                                                  "Count":  0
+                                                                              },
+                                                                              {
+                                                                                  "Phase":  "AfterObservationWindow",
+                                                                                  "Available":  true,
+                                                                                  "Count":  0
+                                                                              }
+                                                                          ],
+                                                 "ProxyUnchanged":  true,
+                                                 "UriHandlerUnchanged":  true,
+                                                 "Passed":  true
+                                             },
+                                             {
+                                                 "ProfileMode":  "FirstRun",
+                                                 "StartedAt":  "2026-11-23T07:00:45.7205988Z",
+                                                 "ExecutableSha256":  "81f38581332f45fbfbbf789b9592f897e63f3e0c0397e1441b9eb9ec6925f4b9",
+                                                 "WindowOpened":  true,
+                                                 "ExitedGracefully":  true,
+                                                 "ForcedTermination":  false,
+                                                 "ExitCode":  0,
+                                                 "CoreChildrenObserved":  0,
+                                                 "TcpConnectionInspectionAvailable":  true,
+                                                 "TcpConnectionsObserved":  0,
+                                                 "TcpSnapshotsObserved":  [
+                                                                              {
+                                                                                  "Phase":  "InputIdle",
+                                                                                  "Available":  true,
+                                                                                  "Count":  0
+                                                                              },
+                                                                              {
+                                                                                  "Phase":  "AfterObservationWindow",
+                                                                                  "Available":  true,
+                                                                                  "Count":  0
+                                                                              }
+                                                                          ],
+                                                 "ProxyUnchanged":  true,
+                                                 "UriHandlerUnchanged":  true,
+                                                 "Passed":  true
+                                             }
+                                         ]
+                         },
+    "PublishedBuild":  {
+                           "BundleFiles":  318,
+                           "BundleBytes":  154818746,
+                           "PortableZipFilesVerified":  318,
+                           "RunnerSha256":  "81f38581332f45fbfbbf789b9592f897e63f3e0c0397e1441b9eb9ec6925f4b9",
+                           "AotSha256":  "f8c4cc5593b14c002167c4dbe3aab6ad9f6a3331649ee6fe198731d7c210347e",
+                           "PeAmd64ImagesVerified":  11,
+                           "DartAotElf64LittleEndianAmd64Verified":  true,
+                           "UnexpectedExecutablesOrScripts":  false,
+                           "UpdateRepository":  "maksoon4k/nn4kvpn",
+                           "CompiledPublisherPinFound":  true,
+                           "RemovedOnlineFontEndpointFoundInAot":  false,
+                           "BundledInterOriginalHashesVerified":  true,
+                           "PinnedCoreBytesAndOriginalNoticesVerified":  true,
+                           "OriginalApplicationAndGlobeAttributionVerified":  true,
+                           "FullGplAndCoreSourceNoticesVerified":  true,
+                           "FlutterDependencyNoticesPresent":  true,
+                           "InstallerAuthenticodeStatus":  "NotSigned"
+                       },
+    "ExactCiPortableLocalValidation":  {
+                                           "HostedRunId":  45127094577,
+                                           "BothStrictUiModesPassed":  true,
+                                           "Startup":  [
+                                                           {
+                                                               "ProfileMode":  "IsolatedMainScreen",
+                                                               "StartedAt":  "2026-11-23T07:18:31.3161526Z",
+                                                               "ExecutableSha256":  "81f38581332f45fbfbbf789b9592f897e63f3e0c0397e1441b9eb9ec6925f4b9",
+                                                               "WindowOpened":  true,
+                                                               "ExitedGracefully":  true,
+                                                               "ForcedTermination":  false,
+                                                               "ExitCode":  0,
+                                                               "CoreChildrenObserved":  0,
+                                                               "TcpConnectionInspectionAvailable":  true,
+                                                               "TcpConnectionsObserved":  0,
+                                                               "TcpSnapshotsObserved":  [
+                                                                                            {
+                                                                                                "Phase":  "InputIdle",
+                                                                                                "Available":  true,
+                                                                                                "Count":  0
+                                                                                            },
+                                                                                            {
+                                                                                                "Phase":  "AfterObservationWindow",
+                                                                                                "Available":  true,
+                                                                                                "Count":  0
+                                                                                            }
+                                                                                        ],
+                                                               "ProxyUnchanged":  true,
+                                                               "UriHandlerUnchanged":  true,
+                                                               "Passed":  true
+                                                           },
+                                                           {
+                                                               "ProfileMode":  "FirstRun",
+                                                               "StartedAt":  "2026-11-23T07:18:43.3672282Z",
+                                                               "ExecutableSha256":  "81f38581332f45fbfbbf789b9592f897e63f3e0c0397e1441b9eb9ec6925f4b9",
+                                                               "WindowOpened":  true,
+                                                               "ExitedGracefully":  true,
+                                                               "ForcedTermination":  false,
+                                                               "ExitCode":  0,
+                                                               "CoreChildrenObserved":  0,
+                                                               "TcpConnectionInspectionAvailable":  true,
+                                                               "TcpConnectionsObserved":  0,
+                                                               "TcpSnapshotsObserved":  [
+                                                                                            {
+                                                                                                "Phase":  "InputIdle",
+                                                                                                "Available":  true,
+                                                                                                "Count":  0
+                                                                                            },
+                                                                                            {
+                                                                                                "Phase":  "AfterObservationWindow",
+                                                                                                "Available":  true,
+                                                                                                "Count":  0
+                                                                                            }
+                                                                                        ],
+                                                               "ProxyUnchanged":  true,
+                                                               "UriHandlerUnchanged":  true,
+                                                               "Passed":  true
+                                                           }
+                                                       ],
+                                           "OriginalHistoricalArtifactsNotOverwritten":  true,
+                                           "InstallerLaunched":  false,
+                                           "ProxyOrTunUsed":  false,
+                                           "RealApplicationProfilesOrSettingsReadOrChanged":  false
+                                       },
+    "RetainedStartupOutputReview":  {
+                                        "IndependentModesInspected":  4,
+                                        "StdoutAndStderrReviewed":  true,
+                                        "UnexpectedOutputObserved":  false,
+                                        "ObservedStdout":  "[video_player_win][native] ~VideoPlayerWinPlugin() called",
+                                        "ObservedStderr":  "[IMPORTANT:flutter/shell/platform/embedder/embedder_surface_gl_impeller.cc(127)] Using the Impeller rendering backend (OpenGLESSDF).",
+                                        "Limit":  "Retained output and two OS TCP snapshots per isolated mode only; not a full exception/traffic trace or VPN privacy certification."
+                                    },
+    "AnonymousPublicDownloadVerification":  {
+                                                "RepositoryId":  1468003190,
+                                                "ReleaseId":  455099291,
+                                                "PublicRepositoryAndExactTagVerified":  true,
+                                                "LatestAndTagReleaseAgree":  true,
+                                                "AllThreeAssetApiDownloadsVerified":  true,
+                                                "EveryPublishedPortableEntryMatchesCi":  true,
+                                                "DefaultCredentialsAndCookiesDisabled":  true,
+                                                "AccountTokenUsed":  false,
+                                                "AuthorizationSent":  false,
+                                                "SavedGhAuthenticationUsed":  false,
+                                                "FinalReleaseNotesMatchPinnedUtf8SourceAndInspectedAddendum":  true,
+                                                "VerificationOnlySequentialByteRangesUsed":  true,
+                                                "FullFileSizeAndHashStillRequired":  true,
+                                                "ApplicationDownloadBehaviorChanged":  false,
+                                                "RequestHosts":  [
+                                                                     "api.github.com",
+                                                                     "release-assets.githubusercontent.com"
+                                                                 ],
+                                                "RequestCount":  31,
+                                                "HttpsRedirectAndSizeBoundsEnforced":  true,
+                                                "OsCertificateVerificationUsed":  true,
+                                                "InstallerOrApplicationLaunched":  false
+                                            },
+    "ProductionUpdaterControllerReplay":  {
+                                              "CheckedAt":  "2026-11-23T07:47:26.184259Z",
+                                              "SourceCommit":  "5251b25584ad1733bf4734d22aa040c576b7976a",
+                                              "Version":  "1.4.4+9",
+                                              "Repository":  "maksoon4k/nn4kvpn",
+                                              "InstallerAssetId":  781959024,
+                                              "InstallerBytes":  41709284,
+                                              "InstallerSha256":  "62c2d266f0522642e0a4e7bc26768e7c24f8eeef4fbc88a8ba7ebbee91736430",
+                                              "ProductionControllerWiringTested":  true,
+                                              "BuildPublisherProviderNotOverridden":  true,
+                                              "LegacySettingsCannotRedirectPublisher":  true,
+                                              "ImportedAppearanceAndOnboardingPreserved":  true,
+                                              "AutomaticInstallRemainsOptIn":  true,
+                                              "SyntheticHarnessSelfTest":  false,
+                                              "RealPublishedMetadataAccepted":  true,
+                                              "RealSeparatelyDownloadedInstallerStreamed":  true,
+                                              "NewerOnlyAndNoDowngrade":  true,
+                                              "FinalVerificationPassed":  true,
+                                              "SameSizeTamperingRejected":  true,
+                                              "OwnedStagedCopyRemoved":  true,
+                                              "UnrelatedFilesAndOriginalInstallerPreserved":  true,
+                                              "MetadataReplayRequests":  3,
+                                              "AssetApiReplayRequests":  1,
+                                              "CdnReplayRequests":  1,
+                                              "NetworkMocked":  true,
+                                              "ApplicationTokenUsed":  false,
+                                              "AuthorizationSent":  false,
+                                              "RealSettingsReadOrChanged":  false,
+                                              "InstallerLaunched":  false,
+                                              "ProxyOrTunUsed":  false,
+                                              "Limit":  "Fresh Flutter compilation of production controller/service with real anonymous metadata/downloaded bytes and an offline mock transport; not an end-to-end installation/restart or normal live VPN test."
+                                          },
+    "PublicationReview":  {
+                              "SourceCommit":  "5251b25584ad1733bf4734d22aa040c576b7976a",
+                              "ReachableCommits":  6,
+                              "ReachableObjects":  558,
+                              "CandidateFiles":  362,
+                              "CandidateTextFiles":  314,
+                              "CandidateBinaryFiles":  48,
+                              "ReviewedSyntheticFindings":  21,
+                              "EveryFindingSameReviewedObjectAndLocation":  true,
+                              "NewHighRiskFindings":  0,
+                              "HistoryRewritten":  false,
+                              "CompletedActionsRunsInspected":  5,
+                              "UnreviewedActionLogFindings":  0,
+                              "PrevisibilityIssues":  0,
+                              "PrevisibilityPullRequests":  0,
+                              "WikiDisabled":  true,
+                              "AuthorPermission":  "Maintainer confirmed permission for public modified-source/Windows distribution; no blanket upstream application license invented.",
+                              "ExposedPatRevocationConfirmed":  false,
+                              "Limit":  "Heuristic scans and screenshot review cannot prove absence of arbitrary encoded/unknown secrets."
+                          },
+    "NativeDependencyInspection":  {
+                                       "PeImagesReadNotExecuted":  11,
+                                       "HistoricalStaticDependencySetsUnchanged":  true,
+                                       "Files":  [
+                                                     {
+                                                         "File":  "dartjni.dll",
+                                                         "Bytes":  62464,
+                                                         "Sha256":  "94385d957c676ca1bc47766815c62df857bd69305e731cd71a75f1ab93ea68ba",
+                                                         "Dependencies":  [
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                              "api-ms-win-crt-stdio-l1-1-0.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "jvm.dll",
+                                                                              "kernel32.dll",
+                                                                              "ole32.dll",
+                                                                              "vcruntime140.dll"
+                                                                          ],
+                                                         "DirectDependencies":  [
+                                                                                    "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-stdio-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-string-l1-1-0.dll",
+                                                                                    "jvm.dll",
+                                                                                    "kernel32.dll",
+                                                                                    "ole32.dll",
+                                                                                    "vcruntime140.dll"
+                                                                                ],
+                                                         "DelayDependencies":  [
+
+                                                                               ]
+                                                     },
+                                                     {
+                                                         "File":  "flutter_windows.dll",
+                                                         "Bytes":  21332480,
+                                                         "Sha256":  "81d227453d4e34da29e399c62d615091ffc712e54fb2ec20010c1c95487e90b6",
+                                                         "Dependencies":  [
+                                                                              "advapi32.dll",
+                                                                              "api-ms-win-core-path-l1-1-0.dll",
+                                                                              "api-ms-win-core-synch-l1-2-0.dll",
+                                                                              "bcrypt.dll",
+                                                                              "crypt32.dll",
+                                                                              "dbghelp.dll",
+                                                                              "dwmapi.dll",
+                                                                              "dxgi.dll",
+                                                                              "gdi32.dll",
+                                                                              "imm32.dll",
+                                                                              "iphlpapi.dll",
+                                                                              "kernel32.dll",
+                                                                              "ntdll.dll",
+                                                                              "ole32.dll",
+                                                                              "oleacc.dll",
+                                                                              "oleaut32.dll",
+                                                                              "opengl32.dll",
+                                                                              "propsys.dll",
+                                                                              "psapi.dll",
+                                                                              "rpcrt4.dll",
+                                                                              "shlwapi.dll",
+                                                                              "uiautomationcore.dll",
+                                                                              "user32.dll",
+                                                                              "winmm.dll",
+                                                                              "ws2_32.dll"
+                                                                          ],
+                                                         "DirectDependencies":  [
+                                                                                    "advapi32.dll",
+                                                                                    "api-ms-win-core-path-l1-1-0.dll",
+                                                                                    "api-ms-win-core-synch-l1-2-0.dll",
+                                                                                    "bcrypt.dll",
+                                                                                    "crypt32.dll",
+                                                                                    "dxgi.dll",
+                                                                                    "gdi32.dll",
+                                                                                    "imm32.dll",
+                                                                                    "iphlpapi.dll",
+                                                                                    "kernel32.dll",
+                                                                                    "ntdll.dll",
+                                                                                    "ole32.dll",
+                                                                                    "oleacc.dll",
+                                                                                    "oleaut32.dll",
+                                                                                    "opengl32.dll",
+                                                                                    "propsys.dll",
+                                                                                    "psapi.dll",
+                                                                                    "rpcrt4.dll",
+                                                                                    "shlwapi.dll",
+                                                                                    "uiautomationcore.dll",
+                                                                                    "user32.dll",
+                                                                                    "winmm.dll",
+                                                                                    "ws2_32.dll"
+                                                                                ],
+                                                         "DelayDependencies":  [
+                                                                                   "dbghelp.dll",
+                                                                                   "dwmapi.dll"
+                                                                               ]
+                                                     },
+                                                     {
+                                                         "File":  "local_notifier_plugin.dll",
+                                                         "Bytes":  164352,
+                                                         "Sha256":  "e9e47854d04084f5036b02fd81f646e45fedbde60a7a0d5ec9fa5de3f4ec1bb7",
+                                                         "Dependencies":  [
+                                                                              "api-ms-win-crt-convert-l1-1-0.dll",
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                              "api-ms-win-crt-math-l1-1-0.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                              "api-ms-win-crt-stdio-l1-1-0.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "flutter_windows.dll",
+                                                                              "kernel32.dll",
+                                                                              "msvcp140.dll",
+                                                                              "ole32.dll",
+                                                                              "vcruntime140.dll",
+                                                                              "vcruntime140_1.dll"
+                                                                          ],
+                                                         "DirectDependencies":  [
+                                                                                    "api-ms-win-crt-convert-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-math-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-stdio-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-string-l1-1-0.dll",
+                                                                                    "flutter_windows.dll",
+                                                                                    "kernel32.dll",
+                                                                                    "msvcp140.dll",
+                                                                                    "ole32.dll",
+                                                                                    "vcruntime140.dll",
+                                                                                    "vcruntime140_1.dll"
+                                                                                ],
+                                                         "DelayDependencies":  [
+
+                                                                               ]
+                                                     },
+                                                     {
+                                                         "File":  "nn4k.exe",
+                                                         "Bytes":  88576,
+                                                         "Sha256":  "81f38581332f45fbfbbf789b9592f897e63f3e0c0397e1441b9eb9ec6925f4b9",
+                                                         "Dependencies":  [
+                                                                              "advapi32.dll",
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                              "api-ms-win-crt-locale-l1-1-0.dll",
+                                                                              "api-ms-win-crt-math-l1-1-0.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                              "api-ms-win-crt-stdio-l1-1-0.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "dwmapi.dll",
+                                                                              "flutter_windows.dll",
+                                                                              "kernel32.dll",
+                                                                              "local_notifier_plugin.dll",
+                                                                              "msvcp140.dll",
+                                                                              "ole32.dll",
+                                                                              "screen_retriever_windows_plugin.dll",
+                                                                              "shell32.dll",
+                                                                              "tray_manager_plugin.dll",
+                                                                              "user32.dll",
+                                                                              "vcruntime140.dll",
+                                                                              "vcruntime140_1.dll",
+                                                                              "video_player_win_plugin.dll",
+                                                                              "window_manager_plugin.dll"
+                                                                          ],
+                                                         "DirectDependencies":  [
+                                                                                    "advapi32.dll",
+                                                                                    "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-locale-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-math-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-stdio-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-string-l1-1-0.dll",
+                                                                                    "dwmapi.dll",
+                                                                                    "flutter_windows.dll",
+                                                                                    "kernel32.dll",
+                                                                                    "local_notifier_plugin.dll",
+                                                                                    "msvcp140.dll",
+                                                                                    "ole32.dll",
+                                                                                    "screen_retriever_windows_plugin.dll",
+                                                                                    "shell32.dll",
+                                                                                    "tray_manager_plugin.dll",
+                                                                                    "user32.dll",
+                                                                                    "vcruntime140.dll",
+                                                                                    "vcruntime140_1.dll",
+                                                                                    "video_player_win_plugin.dll",
+                                                                                    "window_manager_plugin.dll"
+                                                                                ],
+                                                         "DelayDependencies":  [
+
+                                                                               ]
+                                                     },
+                                                     {
+                                                         "File":  "screen_retriever_windows_plugin.dll",
+                                                         "Bytes":  119296,
+                                                         "Sha256":  "6e6f5087904146387babd7606ed4b918c42523e4e6ac059ddeb998491b81866f",
+                                                         "Dependencies":  [
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                              "api-ms-win-crt-math-l1-1-0.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "flutter_windows.dll",
+                                                                              "kernel32.dll",
+                                                                              "msvcp140.dll",
+                                                                              "user32.dll",
+                                                                              "vcruntime140.dll",
+                                                                              "vcruntime140_1.dll"
+                                                                          ],
+                                                         "DirectDependencies":  [
+                                                                                    "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-math-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-string-l1-1-0.dll",
+                                                                                    "flutter_windows.dll",
+                                                                                    "kernel32.dll",
+                                                                                    "msvcp140.dll",
+                                                                                    "user32.dll",
+                                                                                    "vcruntime140.dll",
+                                                                                    "vcruntime140_1.dll"
+                                                                                ],
+                                                         "DelayDependencies":  [
+
+                                                                               ]
+                                                     },
+                                                     {
+                                                         "File":  "tray_manager_plugin.dll",
+                                                         "Bytes":  107520,
+                                                         "Sha256":  "072009dda8ad8a59083f1326e8011406351f4c1dbcc412841758966b36f57b40",
+                                                         "Dependencies":  [
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "flutter_windows.dll",
+                                                                              "kernel32.dll",
+                                                                              "msvcp140.dll",
+                                                                              "shell32.dll",
+                                                                              "user32.dll",
+                                                                              "vcruntime140.dll",
+                                                                              "vcruntime140_1.dll"
+                                                                          ],
+                                                         "DirectDependencies":  [
+                                                                                    "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-string-l1-1-0.dll",
+                                                                                    "flutter_windows.dll",
+                                                                                    "kernel32.dll",
+                                                                                    "msvcp140.dll",
+                                                                                    "shell32.dll",
+                                                                                    "user32.dll",
+                                                                                    "vcruntime140.dll",
+                                                                                    "vcruntime140_1.dll"
+                                                                                ],
+                                                         "DelayDependencies":  [
+
+                                                                               ]
+                                                     },
+                                                     {
+                                                         "File":  "video_player_win_plugin.dll",
+                                                         "Bytes":  175616,
+                                                         "Sha256":  "9952f343e127784ae71ba57d96c7358996b2c6b7bc9c13dace4953dc9ca846b1",
+                                                         "Dependencies":  [
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                              "api-ms-win-crt-stdio-l1-1-0.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "d3d11.dll",
+                                                                              "flutter_windows.dll",
+                                                                              "kernel32.dll",
+                                                                              "mfplat.dll",
+                                                                              "msvcp140.dll",
+                                                                              "ole32.dll",
+                                                                              "user32.dll",
+                                                                              "vcruntime140.dll",
+                                                                              "vcruntime140_1.dll",
+                                                                              "winhttp.dll"
+                                                                          ],
+                                                         "DirectDependencies":  [
+                                                                                    "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-stdio-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-string-l1-1-0.dll",
+                                                                                    "d3d11.dll",
+                                                                                    "flutter_windows.dll",
+                                                                                    "kernel32.dll",
+                                                                                    "mfplat.dll",
+                                                                                    "msvcp140.dll",
+                                                                                    "ole32.dll",
+                                                                                    "user32.dll",
+                                                                                    "vcruntime140.dll",
+                                                                                    "vcruntime140_1.dll",
+                                                                                    "winhttp.dll"
+                                                                                ],
+                                                         "DelayDependencies":  [
+
+                                                                               ]
+                                                     },
+                                                     {
+                                                         "File":  "window_manager_plugin.dll",
+                                                         "Bytes":  128512,
+                                                         "Sha256":  "abf26f5cf8430f03fc62b4c16e40f1205802f4cf3bc988e75af5b9eaa901269e",
+                                                         "Dependencies":  [
+                                                                              "advapi32.dll",
+                                                                              "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                              "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                              "api-ms-win-crt-string-l1-1-0.dll",
+                                                                              "dwmapi.dll",
+                                                                              "flutter_windows.dll",
+                                                                              "kernel32.dll",
+                                                                              "msvcp140.dll",
+                                                                              "ole32.dll",
+                                                                              "shell32.dll",
+                                                                              "user32.dll",
+                                                                              "vcruntime140.dll",
+                                                                              "vcruntime140_1.dll"
+                                                                          ],
+                                                         "DirectDependencies":  [
+                                                                                    "advapi32.dll",
+                                                                                    "api-ms-win-crt-heap-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-runtime-l1-1-0.dll",
+                                                                                    "api-ms-win-crt-string-l1-1-0.dll",
+                                                                                    "dwmapi.dll",
+                                                                                    "flutter_windows.dll",
+                                                                                    "kernel32.dll",
+                                                                                    "msvcp140.dll",
+                                                                                    "ole32.dll",
+                                                                                    "shell32.dll",
+                                                                                    "user32.dll",
+                                                                                    "vcruntime140.dll",
+                                                                                    "vcruntime140_1.dll"
+                                                                                ],
+                                                         "DelayDependencies":  [
+
+                                                                               ]
+                                                     },
+                                                     {
+                                                         "File":  "assets/sing-box/sing-box.exe",
+                                                         "Bytes":  82074624,
+                                                         "Sha256":  "8f30682ee198855440d2a7fe070d5d3653793b2d01bb8c85eea88f93bbe7c8b9",
+                                                         "Dependencies":  [
+                                                                              "kernel32.dll"
+                                                                          ],
+                                                         "DirectDependencies":  [
+                                                                                    "kernel32.dll"
+                                                                                ],
+                                                         "DelayDependencies":  [
+
+                                                                               ]
+                                                     },
+                                                     {
+                                                         "File":  "assets/xray/wintun.dll",
+                                                         "Bytes":  427552,
+                                                         "Sha256":  "e5da8447dc2c320edc0fc52fa01885c103de8c118481f683643cacc3220dafce",
+                                                         "Dependencies":  [
+                                                                              "advapi32.dll",
+                                                                              "api-ms-win-devices-query-l1-1-0.dll",
+                                                                              "api-ms-win-devices-swdevice-l1-1-0.dll",
+                                                                              "cfgmgr32.dll",
+                                                                              "iphlpapi.dll",
+                                                                              "kernel32.dll",
+                                                                              "nci.dll",
+                                                                              "ntdll.dll",
+                                                                              "ole32.dll",
+                                                                              "setupapi.dll",
+                                                                              "shell32.dll",
+                                                                              "shlwapi.dll",
+                                                                              "version.dll"
+                                                                          ],
+                                                         "DirectDependencies":  [
+                                                                                    "kernel32.dll",
+                                                                                    "ntdll.dll"
+                                                                                ],
+                                                         "DelayDependencies":  [
+                                                                                   "advapi32.dll",
+                                                                                   "api-ms-win-devices-query-l1-1-0.dll",
+                                                                                   "api-ms-win-devices-swdevice-l1-1-0.dll",
+                                                                                   "cfgmgr32.dll",
+                                                                                   "iphlpapi.dll",
+                                                                                   "nci.dll",
+                                                                                   "ole32.dll",
+                                                                                   "setupapi.dll",
+                                                                                   "shell32.dll",
+                                                                                   "shlwapi.dll",
+                                                                                   "version.dll"
+                                                                               ]
+                                                     },
+                                                     {
+                                                         "File":  "assets/xray/xray.exe",
+                                                         "Bytes":  34864640,
+                                                         "Sha256":  "1ca7a2cf61ba2c5d20b21a80d405b57933939751081cb289f07bd8ddf7cc3185",
+                                                         "Dependencies":  [
+                                                                              "kernel32.dll"
+                                                                          ],
+                                                         "DirectDependencies":  [
+                                                                                    "kernel32.dll"
+                                                                                ],
+                                                         "DelayDependencies":  [
+
+                                                                               ]
+                                                     }
+                                                 ],
+                                       "UnbundledVisualCppV14X64RuntimeRequired":  true,
+                                       "MediaFoundationRequiredForVideo":  true,
+                                       "ExternalJvmRequiredForJni":  true,
+                                       "Limit":  "Bounded direct/delay PE import inspection only; dynamic imports, JNI/JVM functionality and clean-machine/Windows N compatibility are not certified"
+                                   },
+    "EarlierFailedCi":  {
+                            "RunId":  45125691400,
+                            "SourceCommit":  "c68f3b038415e4a1c01de3228a8c775bd6d20d9f",
+                            "Failure":  "Windows test teardown raced asynchronous updater cancellation cleanup; packaging/publication did not run.",
+                            "Fix":  "Test-only observation and awaiting of the exact cleanup futures; no sleeps, skipped assertions or production behavior changes.",
+                            "FixedRunId":  45127094577,
+                            "ExactBuildNotRetriedAfterCiSuccess":  true
+                        },
+    "Limits":  [
+                   "No live Proxy/TUN connection or real DNS reachability measurements were performed.",
+                   "No installer execution, end-to-end upgrade/restart, clean-machine/Windows N or JNI/JVM functional test was performed.",
+                   "The installer is unsigned; hashes demonstrate matching bytes, not publisher trust, antivirus safety or absence of backdoors.",
+                   "Native/embedded dependencies were not exhaustively audited or rebuilt; inherited Android/macOS code is outside this Windows release.",
+                   "Automatic installation remains opt-in, idle-VPN-only and unavailable from an elevated application; same-user malware is outside the trust boundary."
+               ]
+}

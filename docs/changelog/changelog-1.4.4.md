@@ -22,6 +22,8 @@
   of published versions. Original/component attribution and licenses are included
   in both Windows packages. The old v1.4.3 files are not changed.
 
+Published exact CI packages and anonymous download/controller verification are
+recorded in the [qualified 1.4.4 release record](../WINDOWS_RELEASE_1_4_4.md).
 See [DNS behavior and limits](../DNS_DIAGNOSTICS.md),
 [updates](../WINDOWS_UPDATES.md), and the [qualified review](../SECURITY_AUDIT.md).
 The installer remains per-user and unsigned. Live Proxy/TUN behavior,

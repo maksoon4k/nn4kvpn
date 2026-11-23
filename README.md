@@ -93,8 +93,12 @@ The packages retain [component notices and corresponding source links](THIRD_PAR
 including full GPL/MPL terms; each bundled core's tagged source is available
 without an account or charge.
 
-The new **1.4.4** release adds token-free updates, repaired tools and DNS
-diagnostics. See the [changelog](docs/changelog/changelog-1.4.4.md) and
+The published **[v1.4.4](https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.4)**
+adds token-free updates, repaired tools and DNS diagnostics. Its exact CI packages
+passed **383 tests**, **23 publishing guards**, **15 DNS schemas** and both strict
+startup modes; all public downloads were independently verified without an account.
+See the [release validation record](docs/WINDOWS_RELEASE_1_4_4.md),
+[changelog](docs/changelog/changelog-1.4.4.md) and
 [qualified review](docs/SECURITY_AUDIT.md) for the scope and untested behavior.
 The earlier [v1.4.3](https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.3)
 and its [validation evidence](docs/windows-release-validation.json) remain

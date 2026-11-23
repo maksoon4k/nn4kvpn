@@ -139,7 +139,37 @@ workflow; never use `--clobber` to resolve a conflict.
 Only the publishing CI job has `contents: write`. Workflow actions are pinned
 to commit SHAs. No Android/macOS release jobs run in this fork.
 
-## Initial release validation — 2026-11-23
+## Public 1.4.4 validation — 2026-11-23
+
+The repository is now **public**, and
+[v1.4.4](https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.4) is the stable
+latest release, ID **455099291**. Its tag targets the exact tested build source
+`5251b25584ad1733bf4734d22aa040c576b7976a`; later documentation commits do not
+replace the tag or packages.
+
+[Windows Checks 45127094577](https://github.com/maksoon4k/nn4kvpn/actions/runs/45127094577)
+passed **383 Flutter tests**, **23 publication guards**, **15 offline DNS schemas**,
+analysis, packaging and both strict isolated startup modes. The same CI portable
+also passed both modes locally with disposable settings. All **318 portable files**
+and three separately downloaded public assets matched the exact successful CI bytes,
+sizes and SHA-256 metadata. Public metadata/tag/download verification used no
+Authorization, cookies or saved GitHub authentication. Bounded sequential HTTPS
+byte ranges recovered from an interrupted verification transport; this did not
+change the application's downloader or weaken full-file verification.
+
+A **freshly compiled production-controller replay**, with the publisher provider
+unmodified and only an offline HTTP mock, accepted the actual public metadata and
+independently downloaded installer. Publisher pinning, opt-in behavior, preserved
+appearance/onboarding, newer-only checking, final size/hash verification, same-size
+tamper rejection and owned-copy cleanup passed. No installer or VPN was run.
+End-to-end installation/upgrade/restart, clean-machine/Windows N and live VPN/privacy
+behavior remain untested. See the [complete qualified record](WINDOWS_RELEASE_1_4_4.md)
+and separate [durable JSON evidence](windows-release-validation-1.4.4.json).
+
+The original **v1.4.3** tag and all three asset identities/sizes/digests remain
+unchanged, as does the historical report below.
+
+## Initial 1.4.3 release validation — 2026-11-23 (historical)
 
 [v1.4.3](https://github.com/maksoon4k/nn4kvpn/releases/tag/v1.4.3) is a published
 stable release in the repository that was private at the time of initial
