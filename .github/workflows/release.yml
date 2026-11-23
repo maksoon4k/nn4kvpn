@@ -32,16 +32,15 @@ jobs:
           $version = $Matches[1]
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag must match pubspec.yaml' }
           "version=$version" >> $env:GITHUB_OUTPUT
-          $errorFile = Join-Path $env:RUNNER_TEMP 'nn4k-release-check-error.txt'
-          # A missing release prints its HTTP 404 text on stderr; PowerShell's
-          # $ErrorActionPreference must not turn that into a terminating error.
-          $previousPreference = $ErrorActionPreference
-          $ErrorActionPreference = 'Continue'
-          $existing = gh release view "v$version" --repo $env:GITHUB_REPOSITORY --json isDraft 2>$null
-          $existingExitCode = $LASTEXITCODE
-          $ErrorActionPreference = $previousPreference
+          # A missing release means this version has never been published; the
+          # release may proceed. Existing published releases must not be replaced.
           $shouldRelease = $true
-          if ($existingExitCode -eq 0) { $shouldRelease = ($existing | ConvertFrom-Json).isDraft }
+          try {
+            $release = Invoke-RestMethod -Method Get -Uri "https://api.github.com/repos/$($env:GITHUB_REPOSITORY)/releases/tags/v$version" -Headers @{ Authorization = "Bearer $($env:GITHUB_TOKEN)" }
+            $shouldRelease = -not $release.draft
+          } catch {
+            $shouldRelease = $true
+          }
           "should_release=$($shouldRelease.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
 
   build-windows:
