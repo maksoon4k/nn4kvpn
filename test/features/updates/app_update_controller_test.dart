@@ -26,6 +26,7 @@ void main() {
   late List<http.Request> requests;
   late FakeConnection connection;
   late FakeInstaller installer;
+  late ObservedUpdateService service;
   late List<String> events;
   late Map<String, dynamic> releaseJson;
 
@@ -39,7 +40,7 @@ void main() {
     (releaseJson['assets'] as List).first
       ..['size'] = fixture.installer.size
       ..['digest'] = 'sha256:${fixture.installer.sha256}';
-    final service = GitHubUpdateService(
+    service = ObservedUpdateService(
       client: MockClient((request) async {
         requests.add(request);
         if (request.url.path.endsWith('/latest')) {
@@ -70,6 +71,10 @@ void main() {
 
   tearDown(() async {
     container.dispose();
+    // Controller invalidation deliberately discards asynchronously. Wait for
+    // those exact operations before deleting their parent test directory;
+    // concurrent recursive/non-recursive deletes can race on Windows.
+    await service.waitForCleanup();
     if (await directory.exists()) await directory.delete(recursive: true);
   });
 
@@ -266,6 +271,9 @@ void main() {
       await installing;
       expect(events, ['validate', 'prepareForExit', 'cancelExit']);
       expect(state().phase, AppUpdatePhase.idle);
+      expect(service.cleanupOperations, hasLength(1));
+      await service.waitForCleanup();
+      expect(await directory.list().toList(), isEmpty);
       expect(state().release, isNull);
     },
   );
@@ -304,6 +312,9 @@ void main() {
       await installing;
       expect(events, ['validate', 'prepareForExit', 'cancelExit']);
       expect(state().phase, AppUpdatePhase.idle);
+      expect(service.cleanupOperations, hasLength(1));
+      await service.waitForCleanup();
+      expect(await directory.list().toList(), isEmpty);
     },
   );
 
@@ -423,5 +434,22 @@ class FakeInstaller implements UpdateInstaller {
     events.add('launch');
     if (launchFailure) throw const UpdateException(UpdateFailure.installFailed);
     return true;
+  }
+}
+
+class ObservedUpdateService extends GitHubUpdateService {
+  final cleanupOperations = <Future<void>>[];
+
+  ObservedUpdateService({required http.Client client}) : super(client: client);
+
+  @override
+  Future<void> discardDownloaded(DownloadedUpdate update) {
+    final operation = super.discardDownloaded(update);
+    cleanupOperations.add(operation);
+    return operation;
+  }
+
+  Future<void> waitForCleanup() async {
+    await Future.wait(cleanupOperations);
   }
 }
